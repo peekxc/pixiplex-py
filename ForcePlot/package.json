@@ -1,0 +1,13 @@
+{
+  "name": "pixiplex-py",
+  "version": "0.0.1",
+  "description": "",
+  "license": "BSD-3-Clause",
+  "keywords": [],
+  "repository": {},
+  "dependencies": {
+    "@bokeh/bokehjs": "^3.2.0",
+    "@types/d3-force": "^3.0.10",
+    "d3-force": "^3.0.0"
+  }
+}

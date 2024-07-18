@@ -1,0 +1,21 @@
+    <!-- <div> 
+      {{ embed(roots.sim_figure) }}
+    </div>
+    -->
+
+        <button id="restart">Restart Simulation</button>
+    <!-- TODO: Try using the template stuff https://docs.bokeh.org/en/latest/docs/reference/core/templates.html#bokeh.core.templates.FILE -->
+    <script type="text/javascript">
+      const plt = Bokeh.Plotting;
+      console.log("Hello");
+      class Node {
+        constructor(index, x, y, color, radius) {
+          this.index = index
+          this.x = x
+          this.y = y
+          this.color = color
+          this.radius = radius
+        }
+      }
+      console.log(plt);
+    </script>

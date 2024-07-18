@@ -1,0 +1,84 @@
+{
+  "compilerOptions": {
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noImplicitOverride": false,
+    "strictNullChecks": true,
+    "strictBindCallApply": true,
+    "strictFunctionTypes": true,
+    "strictPropertyInitialization": false,
+    "useUnknownInCatchVariables": true,
+    "alwaysStrict": true,
+    "noErrorTruncation": true,
+    "noEmitOnError": false,
+    "allowJs": true,
+    "declaration": true,
+    "sourceMap": true,
+    "declarationMap": true,
+    "importHelpers": false,
+    "experimentalDecorators": true,
+    "module": "ES2022",
+    "moduleResolution": "node",
+    "isolatedModules": true,
+    "verbatimModuleSyntax": false,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "target": "ES2022",
+    "lib": [
+      "es2022",
+      "dom",
+      "dom.iterable"
+    ],
+    "baseUrl": ".",
+    "outDir": "./dist/lib"
+  },
+  "include": [
+    "./**/*.ts"
+  ],
+  "default": {
+    "compilerOptions": {
+      "noImplicitAny": true,
+      "noImplicitThis": true,
+      "noImplicitReturns": true,
+      "noUnusedLocals": false,
+      "noUnusedParameters": false,
+      "noImplicitOverride": false,
+      "strictNullChecks": true,
+      "strictBindCallApply": true,
+      "strictFunctionTypes": true,
+      "strictPropertyInitialization": false,
+      "useUnknownInCatchVariables": true,
+      "alwaysStrict": true,
+      "noErrorTruncation": true,
+      "noEmitOnError": false,
+      "allowJs": true,
+      "declaration": true,
+      "sourceMap": true,
+      "declarationMap": true,
+      "importHelpers": false,
+      "experimentalDecorators": true,
+      "module": "ES2022",
+      "moduleResolution": "node",
+      "isolatedModules": true,
+      "verbatimModuleSyntax": false,
+      "resolveJsonModule": true,
+      "skipLibCheck": true,
+      "esModuleInterop": true,
+      "target": "ES2022",
+      "lib": [
+        "es2022",
+        "dom",
+        "dom.iterable"
+      ],
+      "baseUrl": ".",
+      "outDir": "./dist/lib"
+    },
+    "include": [
+      "./**/*.ts"
+    ]
+  }
+}

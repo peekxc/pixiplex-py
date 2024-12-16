@@ -35079,9 +35079,12 @@ var init_WebGLRenderer = __esm({
 var pixinet_exports = {};
 __export(pixinet_exports, {
   Application: () => Application,
+  Container: () => Container,
   Graphics: () => Graphics,
+  Pixiplex: () => Pixiplex,
   Polygon: () => Polygon,
   Text: () => Text,
+  Ticker: () => Ticker,
   _draw_polygon: () => _draw_polygon,
   apply_force: () => apply_force,
   apply_sim: () => apply_sim,
@@ -35105,7 +35108,6 @@ __export(pixinet_exports, {
   draw_polygon: () => draw_polygon,
   draw_polygons: () => draw_polygons,
   enable_drag_container: () => enable_drag_container,
-  enable_force: () => enable_force,
   enable_interactive: () => enable_interactive,
   enable_lasso: () => enable_lasso,
   enable_resize: () => enable_resize,
@@ -35113,6 +35115,7 @@ __export(pixinet_exports, {
   flatMap: () => flatMap_default,
   forOwn: () => forOwn_default,
   force_drag: () => force_drag,
+  force_sim: () => force_sim,
   generate_links_graphic: () => generate_links_graphic,
   generate_node_graphics: () => generate_node_graphics,
   generate_polygon_graphics: () => generate_polygon_graphics,
@@ -35135,6 +35138,7 @@ __export(pixinet_exports, {
   remove: () => remove_default4,
   remove_nodes: () => remove_nodes,
   resolve_links: () => resolve_links,
+  resolve_links_index: () => resolve_links_index,
   scale_nodes: () => scale_nodes,
   select: () => select_default2,
   set_dpi: () => set_dpi,
@@ -37742,9 +37746,9 @@ function selector_default(selector) {
 function select_default(select) {
   if (typeof select !== "function") select = selector_default(select);
   for (var groups = this._groups, m4 = groups.length, subgroups = new Array(m4), j3 = 0; j3 < m4; ++j3) {
-    for (var group = groups[j3], n2 = group.length, subgroup = subgroups[j3] = new Array(n2), node2, subnode, i2 = 0; i2 < n2; ++i2) {
-      if ((node2 = group[i2]) && (subnode = select.call(node2, node2.__data__, i2, group))) {
-        if ("__data__" in node2) subnode.__data__ = node2.__data__;
+    for (var group = groups[j3], n2 = group.length, subgroup = subgroups[j3] = new Array(n2), node, subnode, i2 = 0; i2 < n2; ++i2) {
+      if ((node = group[i2]) && (subnode = select.call(node, node.__data__, i2, group))) {
+        if ("__data__" in node) subnode.__data__ = node.__data__;
         subgroup[i2] = subnode;
       }
     }
@@ -37777,10 +37781,10 @@ function selectAll_default(select) {
   if (typeof select === "function") select = arrayAll(select);
   else select = selectorAll_default(select);
   for (var groups = this._groups, m4 = groups.length, subgroups = [], parents = [], j3 = 0; j3 < m4; ++j3) {
-    for (var group = groups[j3], n2 = group.length, node2, i2 = 0; i2 < n2; ++i2) {
-      if (node2 = group[i2]) {
-        subgroups.push(select.call(node2, node2.__data__, i2, group));
-        parents.push(node2);
+    for (var group = groups[j3], n2 = group.length, node, i2 = 0; i2 < n2; ++i2) {
+      if (node = group[i2]) {
+        subgroups.push(select.call(node, node.__data__, i2, group));
+        parents.push(node);
       }
     }
   }
@@ -37794,8 +37798,8 @@ function matcher_default(selector) {
   };
 }
 function childMatcher(selector) {
-  return function(node2) {
-    return node2.matches(selector);
+  return function(node) {
+    return node.matches(selector);
   };
 }
 
@@ -37831,9 +37835,9 @@ function selectChildren_default(match) {
 function filter_default(match) {
   if (typeof match !== "function") match = matcher_default(match);
   for (var groups = this._groups, m4 = groups.length, subgroups = new Array(m4), j3 = 0; j3 < m4; ++j3) {
-    for (var group = groups[j3], n2 = group.length, subgroup = subgroups[j3] = [], node2, i2 = 0; i2 < n2; ++i2) {
-      if ((node2 = group[i2]) && match.call(node2, node2.__data__, i2, group)) {
-        subgroup.push(node2);
+    for (var group = groups[j3], n2 = group.length, subgroup = subgroups[j3] = [], node, i2 = 0; i2 < n2; ++i2) {
+      if ((node = group[i2]) && match.call(node, node.__data__, i2, group)) {
+        subgroup.push(node);
       }
     }
   }
@@ -37881,51 +37885,51 @@ function constant_default(x5) {
 
 // node_modules/d3-selection/src/selection/data.js
 function bindIndex(parent2, group, enter, update, exit, data) {
-  var i2 = 0, node2, groupLength = group.length, dataLength = data.length;
+  var i2 = 0, node, groupLength = group.length, dataLength = data.length;
   for (; i2 < dataLength; ++i2) {
-    if (node2 = group[i2]) {
-      node2.__data__ = data[i2];
-      update[i2] = node2;
+    if (node = group[i2]) {
+      node.__data__ = data[i2];
+      update[i2] = node;
     } else {
       enter[i2] = new EnterNode(parent2, data[i2]);
     }
   }
   for (; i2 < groupLength; ++i2) {
-    if (node2 = group[i2]) {
-      exit[i2] = node2;
+    if (node = group[i2]) {
+      exit[i2] = node;
     }
   }
 }
 function bindKey(parent2, group, enter, update, exit, data, key) {
-  var i2, node2, nodeByKeyValue = /* @__PURE__ */ new Map(), groupLength = group.length, dataLength = data.length, keyValues = new Array(groupLength), keyValue;
+  var i2, node, nodeByKeyValue = /* @__PURE__ */ new Map(), groupLength = group.length, dataLength = data.length, keyValues = new Array(groupLength), keyValue;
   for (i2 = 0; i2 < groupLength; ++i2) {
-    if (node2 = group[i2]) {
-      keyValues[i2] = keyValue = key.call(node2, node2.__data__, i2, group) + "";
+    if (node = group[i2]) {
+      keyValues[i2] = keyValue = key.call(node, node.__data__, i2, group) + "";
       if (nodeByKeyValue.has(keyValue)) {
-        exit[i2] = node2;
+        exit[i2] = node;
       } else {
-        nodeByKeyValue.set(keyValue, node2);
+        nodeByKeyValue.set(keyValue, node);
       }
     }
   }
   for (i2 = 0; i2 < dataLength; ++i2) {
     keyValue = key.call(parent2, data[i2], i2, data) + "";
-    if (node2 = nodeByKeyValue.get(keyValue)) {
-      update[i2] = node2;
-      node2.__data__ = data[i2];
+    if (node = nodeByKeyValue.get(keyValue)) {
+      update[i2] = node;
+      node.__data__ = data[i2];
       nodeByKeyValue.delete(keyValue);
     } else {
       enter[i2] = new EnterNode(parent2, data[i2]);
     }
   }
   for (i2 = 0; i2 < groupLength; ++i2) {
-    if ((node2 = group[i2]) && nodeByKeyValue.get(keyValues[i2]) === node2) {
-      exit[i2] = node2;
+    if ((node = group[i2]) && nodeByKeyValue.get(keyValues[i2]) === node) {
+      exit[i2] = node;
     }
   }
 }
-function datum(node2) {
-  return node2.__data__;
+function datum(node) {
+  return node.__data__;
 }
 function data_default(value, key) {
   if (!arguments.length) return Array.from(this, datum);
@@ -37978,9 +37982,9 @@ function join_default(onenter, onupdate, onexit) {
 function merge_default(context2) {
   var selection2 = context2.selection ? context2.selection() : context2;
   for (var groups0 = this._groups, groups1 = selection2._groups, m0 = groups0.length, m1 = groups1.length, m4 = Math.min(m0, m1), merges = new Array(m0), j3 = 0; j3 < m4; ++j3) {
-    for (var group0 = groups0[j3], group1 = groups1[j3], n2 = group0.length, merge2 = merges[j3] = new Array(n2), node2, i2 = 0; i2 < n2; ++i2) {
-      if (node2 = group0[i2] || group1[i2]) {
-        merge2[i2] = node2;
+    for (var group0 = groups0[j3], group1 = groups1[j3], n2 = group0.length, merge2 = merges[j3] = new Array(n2), node, i2 = 0; i2 < n2; ++i2) {
+      if (node = group0[i2] || group1[i2]) {
+        merge2[i2] = node;
       }
     }
   }
@@ -37993,10 +37997,10 @@ function merge_default(context2) {
 // node_modules/d3-selection/src/selection/order.js
 function order_default() {
   for (var groups = this._groups, j3 = -1, m4 = groups.length; ++j3 < m4; ) {
-    for (var group = groups[j3], i2 = group.length - 1, next = group[i2], node2; --i2 >= 0; ) {
-      if (node2 = group[i2]) {
-        if (next && node2.compareDocumentPosition(next) ^ 4) next.parentNode.insertBefore(node2, next);
-        next = node2;
+    for (var group = groups[j3], i2 = group.length - 1, next = group[i2], node; --i2 >= 0; ) {
+      if (node = group[i2]) {
+        if (next && node.compareDocumentPosition(next) ^ 4) next.parentNode.insertBefore(node, next);
+        next = node;
       }
     }
   }
@@ -38010,9 +38014,9 @@ function sort_default(compare) {
     return a3 && b2 ? compare(a3.__data__, b2.__data__) : !a3 - !b2;
   }
   for (var groups = this._groups, m4 = groups.length, sortgroups = new Array(m4), j3 = 0; j3 < m4; ++j3) {
-    for (var group = groups[j3], n2 = group.length, sortgroup = sortgroups[j3] = new Array(n2), node2, i2 = 0; i2 < n2; ++i2) {
-      if (node2 = group[i2]) {
-        sortgroup[i2] = node2;
+    for (var group = groups[j3], n2 = group.length, sortgroup = sortgroups[j3] = new Array(n2), node, i2 = 0; i2 < n2; ++i2) {
+      if (node = group[i2]) {
+        sortgroup[i2] = node;
       }
     }
     sortgroup.sort(compareNode);
@@ -38040,8 +38044,8 @@ function nodes_default() {
 function node_default() {
   for (var groups = this._groups, j3 = 0, m4 = groups.length; j3 < m4; ++j3) {
     for (var group = groups[j3], i2 = 0, n2 = group.length; i2 < n2; ++i2) {
-      var node2 = group[i2];
-      if (node2) return node2;
+      var node = group[i2];
+      if (node) return node;
     }
   }
   return null;
@@ -38050,7 +38054,7 @@ function node_default() {
 // node_modules/d3-selection/src/selection/size.js
 function size_default() {
   let size = 0;
-  for (const node2 of this) ++size;
+  for (const node of this) ++size;
   return size;
 }
 
@@ -38062,8 +38066,8 @@ function empty_default() {
 // node_modules/d3-selection/src/selection/each.js
 function each_default(callback) {
   for (var groups = this._groups, j3 = 0, m4 = groups.length; j3 < m4; ++j3) {
-    for (var group = groups[j3], i2 = 0, n2 = group.length, node2; i2 < n2; ++i2) {
-      if (node2 = group[i2]) callback.call(node2, node2.__data__, i2, group);
+    for (var group = groups[j3], i2 = 0, n2 = group.length, node; i2 < n2; ++i2) {
+      if (node = group[i2]) callback.call(node, node.__data__, i2, group);
     }
   }
   return this;
@@ -38107,15 +38111,15 @@ function attrFunctionNS(fullname, value) {
 function attr_default(name, value) {
   var fullname = namespace_default(name);
   if (arguments.length < 2) {
-    var node2 = this.node();
-    return fullname.local ? node2.getAttributeNS(fullname.space, fullname.local) : node2.getAttribute(fullname);
+    var node = this.node();
+    return fullname.local ? node.getAttributeNS(fullname.space, fullname.local) : node.getAttribute(fullname);
   }
   return this.each((value == null ? fullname.local ? attrRemoveNS : attrRemove : typeof value === "function" ? fullname.local ? attrFunctionNS : attrFunction : fullname.local ? attrConstantNS : attrConstant)(fullname, value));
 }
 
 // node_modules/d3-selection/src/window.js
-function window_default(node2) {
-  return node2.ownerDocument && node2.ownerDocument.defaultView || node2.document && node2 || node2.defaultView;
+function window_default(node) {
+  return node.ownerDocument && node.ownerDocument.defaultView || node.document && node || node.defaultView;
 }
 
 // node_modules/d3-selection/src/selection/style.js
@@ -38139,8 +38143,8 @@ function styleFunction(name, value, priority) {
 function style_default(name, value, priority) {
   return arguments.length > 1 ? this.each((value == null ? styleRemove : typeof value === "function" ? styleFunction : styleConstant)(name, value, priority == null ? "" : priority)) : styleValue(this.node(), name);
 }
-function styleValue(node2, name) {
-  return node2.style.getPropertyValue(name) || window_default(node2).getComputedStyle(node2, null).getPropertyValue(name);
+function styleValue(node, name) {
+  return node.style.getPropertyValue(name) || window_default(node).getComputedStyle(node, null).getPropertyValue(name);
 }
 
 // node_modules/d3-selection/src/selection/property.js
@@ -38169,12 +38173,12 @@ function property_default(name, value) {
 function classArray(string) {
   return string.trim().split(/^|\s+/);
 }
-function classList(node2) {
-  return node2.classList || new ClassList(node2);
+function classList(node) {
+  return node.classList || new ClassList(node);
 }
-function ClassList(node2) {
-  this._node = node2;
-  this._names = classArray(node2.getAttribute("class") || "");
+function ClassList(node) {
+  this._node = node;
+  this._names = classArray(node.getAttribute("class") || "");
 }
 ClassList.prototype = {
   add: function(name) {
@@ -38195,12 +38199,12 @@ ClassList.prototype = {
     return this._names.indexOf(name) >= 0;
   }
 };
-function classedAdd(node2, names) {
-  var list = classList(node2), i2 = -1, n2 = names.length;
+function classedAdd(node, names) {
+  var list = classList(node), i2 = -1, n2 = names.length;
   while (++i2 < n2) list.add(names[i2]);
 }
-function classedRemove(node2, names) {
-  var list = classList(node2), i2 = -1, n2 = names.length;
+function classedRemove(node, names) {
+  var list = classList(node), i2 = -1, n2 = names.length;
   while (++i2 < n2) list.remove(names[i2]);
 }
 function classedTrue(names) {
@@ -38392,8 +38396,8 @@ function on_default(typename, value, options) {
 }
 
 // node_modules/d3-selection/src/selection/dispatch.js
-function dispatchEvent(node2, type2, params) {
-  var window2 = window_default(node2), event = window2.CustomEvent;
+function dispatchEvent(node, type2, params) {
+  var window2 = window_default(node), event = window2.CustomEvent;
   if (typeof event === "function") {
     event = new event(type2, params);
   } else {
@@ -38401,7 +38405,7 @@ function dispatchEvent(node2, type2, params) {
     if (params) event.initEvent(type2, params.bubbles, params.cancelable), event.detail = params.detail;
     else event.initEvent(type2, false, false);
   }
-  node2.dispatchEvent(event);
+  node.dispatchEvent(event);
 }
 function dispatchConstant(type2, params) {
   return function() {
@@ -38420,8 +38424,8 @@ function dispatch_default(type2, params) {
 // node_modules/d3-selection/src/selection/iterator.js
 function* iterator_default() {
   for (var groups = this._groups, j3 = 0, m4 = groups.length; j3 < m4; ++j3) {
-    for (var group = groups[j3], i2 = 0, n2 = group.length, node2; i2 < n2; ++i2) {
-      if (node2 = group[i2]) yield node2;
+    for (var group = groups[j3], i2 = 0, n2 = group.length, node; i2 < n2; ++i2) {
+      if (node = group[i2]) yield node;
     }
   }
 }
@@ -38491,20 +38495,20 @@ function sourceEvent_default(event) {
 }
 
 // node_modules/d3-selection/src/pointer.js
-function pointer_default(event, node2) {
+function pointer_default(event, node) {
   event = sourceEvent_default(event);
-  if (node2 === void 0) node2 = event.currentTarget;
-  if (node2) {
-    var svg = node2.ownerSVGElement || node2;
+  if (node === void 0) node = event.currentTarget;
+  if (node) {
+    var svg = node.ownerSVGElement || node;
     if (svg.createSVGPoint) {
       var point = svg.createSVGPoint();
       point.x = event.clientX, point.y = event.clientY;
-      point = point.matrixTransform(node2.getScreenCTM().inverse());
+      point = point.matrixTransform(node.getScreenCTM().inverse());
       return [point.x, point.y];
     }
-    if (node2.getBoundingClientRect) {
-      var rect = node2.getBoundingClientRect();
-      return [event.clientX - rect.left - node2.clientLeft, event.clientY - rect.top - node2.clientTop];
+    if (node.getBoundingClientRect) {
+      var rect = node.getBoundingClientRect();
+      return [event.clientX - rect.left - node.clientLeft, event.clientY - rect.top - node.clientTop];
     }
   }
   return [event.pageX, event.pageY];
@@ -40123,11 +40127,11 @@ var STARTED = 3;
 var RUNNING = 4;
 var ENDING = 5;
 var ENDED = 6;
-function schedule_default(node2, name, id2, index2, group, timing) {
-  var schedules = node2.__transition;
-  if (!schedules) node2.__transition = {};
+function schedule_default(node, name, id2, index2, group, timing) {
+  var schedules = node.__transition;
+  if (!schedules) node.__transition = {};
   else if (id2 in schedules) return;
-  create(node2, id2, {
+  create(node, id2, {
     name,
     index: index2,
     // For context during callback.
@@ -40143,23 +40147,23 @@ function schedule_default(node2, name, id2, index2, group, timing) {
     state: CREATED
   });
 }
-function init2(node2, id2) {
-  var schedule = get2(node2, id2);
+function init2(node, id2) {
+  var schedule = get2(node, id2);
   if (schedule.state > CREATED) throw new Error("too late; already scheduled");
   return schedule;
 }
-function set2(node2, id2) {
-  var schedule = get2(node2, id2);
+function set2(node, id2) {
+  var schedule = get2(node, id2);
   if (schedule.state > STARTED) throw new Error("too late; already running");
   return schedule;
 }
-function get2(node2, id2) {
-  var schedule = node2.__transition;
+function get2(node, id2) {
+  var schedule = node.__transition;
   if (!schedule || !(schedule = schedule[id2])) throw new Error("transition not found");
   return schedule;
 }
-function create(node2, id2, self2) {
-  var schedules = node2.__transition, tween;
+function create(node, id2, self2) {
+  var schedules = node.__transition, tween;
   schedules[id2] = self2;
   self2.timer = timer(schedule, 0, self2.time);
   function schedule(elapsed) {
@@ -40177,12 +40181,12 @@ function create(node2, id2, self2) {
       if (o2.state === RUNNING) {
         o2.state = ENDED;
         o2.timer.stop();
-        o2.on.call("interrupt", node2, node2.__data__, o2.index, o2.group);
+        o2.on.call("interrupt", node, node.__data__, o2.index, o2.group);
         delete schedules[i2];
       } else if (+i2 < id2) {
         o2.state = ENDED;
         o2.timer.stop();
-        o2.on.call("cancel", node2, node2.__data__, o2.index, o2.group);
+        o2.on.call("cancel", node, node.__data__, o2.index, o2.group);
         delete schedules[i2];
       }
     }
@@ -40194,12 +40198,12 @@ function create(node2, id2, self2) {
       }
     });
     self2.state = STARTING;
-    self2.on.call("start", node2, node2.__data__, self2.index, self2.group);
+    self2.on.call("start", node, node.__data__, self2.index, self2.group);
     if (self2.state !== STARTING) return;
     self2.state = STARTED;
     tween = new Array(n2 = self2.tween.length);
     for (i2 = 0, j3 = -1; i2 < n2; ++i2) {
-      if (o2 = self2.tween[i2].value.call(node2, node2.__data__, self2.index, self2.group)) {
+      if (o2 = self2.tween[i2].value.call(node, node.__data__, self2.index, self2.group)) {
         tween[++j3] = o2;
       }
     }
@@ -40208,10 +40212,10 @@ function create(node2, id2, self2) {
   function tick(elapsed) {
     var t2 = elapsed < self2.duration ? self2.ease.call(null, elapsed / self2.duration) : (self2.timer.restart(stop), self2.state = ENDING, 1), i2 = -1, n2 = tween.length;
     while (++i2 < n2) {
-      tween[i2].call(node2, t2);
+      tween[i2].call(node, t2);
     }
     if (self2.state === ENDING) {
-      self2.on.call("end", node2, node2.__data__, self2.index, self2.group);
+      self2.on.call("end", node, node.__data__, self2.index, self2.group);
       stop();
     }
   }
@@ -40220,13 +40224,13 @@ function create(node2, id2, self2) {
     self2.timer.stop();
     delete schedules[id2];
     for (var i2 in schedules) return;
-    delete node2.__transition;
+    delete node.__transition;
   }
 }
 
 // node_modules/d3-transition/src/interrupt.js
-function interrupt_default(node2, name) {
-  var schedules = node2.__transition, schedule, active, empty2 = true, i2;
+function interrupt_default(node, name) {
+  var schedules = node.__transition, schedule, active, empty2 = true, i2;
   if (!schedules) return;
   name = name == null ? null : name + "";
   for (i2 in schedules) {
@@ -40237,10 +40241,10 @@ function interrupt_default(node2, name) {
     active = schedule.state > STARTING && schedule.state < ENDING;
     schedule.state = ENDED;
     schedule.timer.stop();
-    schedule.on.call(active ? "interrupt" : "cancel", node2, node2.__data__, schedule.index, schedule.group);
+    schedule.on.call(active ? "interrupt" : "cancel", node, node.__data__, schedule.index, schedule.group);
     delete schedules[i2];
   }
-  if (empty2) delete node2.__transition;
+  if (empty2) delete node.__transition;
 }
 
 // node_modules/d3-transition/src/selection/interrupt.js
@@ -40306,8 +40310,8 @@ function tweenValue(transition2, name, value) {
     var schedule = set2(this, id2);
     (schedule.value || (schedule.value = {}))[name] = value.apply(this, arguments);
   });
-  return function(node2) {
-    return get2(node2, id2).value[name];
+  return function(node) {
+    return get2(node, id2).value[name];
   };
 }
 
@@ -40468,9 +40472,9 @@ function easeVarying_default(value) {
 function filter_default2(match) {
   if (typeof match !== "function") match = matcher_default(match);
   for (var groups = this._groups, m4 = groups.length, subgroups = new Array(m4), j3 = 0; j3 < m4; ++j3) {
-    for (var group = groups[j3], n2 = group.length, subgroup = subgroups[j3] = [], node2, i2 = 0; i2 < n2; ++i2) {
-      if ((node2 = group[i2]) && match.call(node2, node2.__data__, i2, group)) {
-        subgroup.push(node2);
+    for (var group = groups[j3], n2 = group.length, subgroup = subgroups[j3] = [], node, i2 = 0; i2 < n2; ++i2) {
+      if ((node = group[i2]) && match.call(node, node.__data__, i2, group)) {
+        subgroup.push(node);
       }
     }
   }
@@ -40481,9 +40485,9 @@ function filter_default2(match) {
 function merge_default2(transition2) {
   if (transition2._id !== this._id) throw new Error();
   for (var groups0 = this._groups, groups1 = transition2._groups, m0 = groups0.length, m1 = groups1.length, m4 = Math.min(m0, m1), merges = new Array(m0), j3 = 0; j3 < m4; ++j3) {
-    for (var group0 = groups0[j3], group1 = groups1[j3], n2 = group0.length, merge2 = merges[j3] = new Array(n2), node2, i2 = 0; i2 < n2; ++i2) {
-      if (node2 = group0[i2] || group1[i2]) {
-        merge2[i2] = node2;
+    for (var group0 = groups0[j3], group1 = groups1[j3], n2 = group0.length, merge2 = merges[j3] = new Array(n2), node, i2 = 0; i2 < n2; ++i2) {
+      if (node = group0[i2] || group1[i2]) {
+        merge2[i2] = node;
       }
     }
   }
@@ -40531,11 +40535,11 @@ function select_default3(select) {
   var name = this._name, id2 = this._id;
   if (typeof select !== "function") select = selector_default(select);
   for (var groups = this._groups, m4 = groups.length, subgroups = new Array(m4), j3 = 0; j3 < m4; ++j3) {
-    for (var group = groups[j3], n2 = group.length, subgroup = subgroups[j3] = new Array(n2), node2, subnode, i2 = 0; i2 < n2; ++i2) {
-      if ((node2 = group[i2]) && (subnode = select.call(node2, node2.__data__, i2, group))) {
-        if ("__data__" in node2) subnode.__data__ = node2.__data__;
+    for (var group = groups[j3], n2 = group.length, subgroup = subgroups[j3] = new Array(n2), node, subnode, i2 = 0; i2 < n2; ++i2) {
+      if ((node = group[i2]) && (subnode = select.call(node, node.__data__, i2, group))) {
+        if ("__data__" in node) subnode.__data__ = node.__data__;
         subgroup[i2] = subnode;
-        schedule_default(subgroup[i2], name, id2, i2, subgroup, get2(node2, id2));
+        schedule_default(subgroup[i2], name, id2, i2, subgroup, get2(node, id2));
       }
     }
   }
@@ -40547,15 +40551,15 @@ function selectAll_default2(select) {
   var name = this._name, id2 = this._id;
   if (typeof select !== "function") select = selectorAll_default(select);
   for (var groups = this._groups, m4 = groups.length, subgroups = [], parents = [], j3 = 0; j3 < m4; ++j3) {
-    for (var group = groups[j3], n2 = group.length, node2, i2 = 0; i2 < n2; ++i2) {
-      if (node2 = group[i2]) {
-        for (var children2 = select.call(node2, node2.__data__, i2, group), child, inherit2 = get2(node2, id2), k3 = 0, l2 = children2.length; k3 < l2; ++k3) {
+    for (var group = groups[j3], n2 = group.length, node, i2 = 0; i2 < n2; ++i2) {
+      if (node = group[i2]) {
+        for (var children2 = select.call(node, node.__data__, i2, group), child, inherit2 = get2(node, id2), k3 = 0, l2 = children2.length; k3 < l2; ++k3) {
           if (child = children2[k3]) {
             schedule_default(child, name, id2, k3, children2, inherit2);
           }
         }
         subgroups.push(children2);
-        parents.push(node2);
+        parents.push(node);
       }
     }
   }
@@ -40677,10 +40681,10 @@ function textTween_default(value) {
 function transition_default() {
   var name = this._name, id0 = this._id, id1 = newId();
   for (var groups = this._groups, m4 = groups.length, j3 = 0; j3 < m4; ++j3) {
-    for (var group = groups[j3], n2 = group.length, node2, i2 = 0; i2 < n2; ++i2) {
-      if (node2 = group[i2]) {
-        var inherit2 = get2(node2, id0);
-        schedule_default(node2, name, id1, i2, group, {
+    for (var group = groups[j3], n2 = group.length, node, i2 = 0; i2 < n2; ++i2) {
+      if (node = group[i2]) {
+        var inherit2 = get2(node, id0);
+        schedule_default(node, name, id1, i2, group, {
           time: inherit2.time + inherit2.delay + inherit2.duration,
           delay: 0,
           duration: inherit2.duration,
@@ -40774,10 +40778,10 @@ var defaultTiming = {
   duration: 250,
   ease: cubicInOut
 };
-function inherit(node2, id2) {
+function inherit(node, id2) {
   var timing;
-  while (!(timing = node2.__transition) || !(timing = timing[id2])) {
-    if (!(node2 = node2.parentNode)) {
+  while (!(timing = node.__transition) || !(timing = timing[id2])) {
+    if (!(node = node.parentNode)) {
       throw new Error(`transition ${id2} not found`);
     }
   }
@@ -40791,9 +40795,9 @@ function transition_default2(name) {
     id2 = newId(), (timing = defaultTiming).time = now(), name = name == null ? null : name + "";
   }
   for (var groups = this._groups, m4 = groups.length, j3 = 0; j3 < m4; ++j3) {
-    for (var group = groups[j3], n2 = group.length, node2, i2 = 0; i2 < n2; ++i2) {
-      if (node2 = group[i2]) {
-        schedule_default(node2, name, id2, i2, group, timing || inherit(node2, id2));
+    for (var group = groups[j3], n2 = group.length, node, i2 = 0; i2 < n2; ++i2) {
+      if (node = group[i2]) {
+        schedule_default(node, name, id2, i2, group, timing || inherit(node, id2));
       }
     }
   }
@@ -40865,12 +40869,12 @@ function center_default(x5, y4) {
   if (x5 == null) x5 = 0;
   if (y4 == null) y4 = 0;
   function force() {
-    var i2, n2 = nodes.length, node2, sx = 0, sy = 0;
+    var i2, n2 = nodes.length, node, sx = 0, sy = 0;
     for (i2 = 0; i2 < n2; ++i2) {
-      node2 = nodes[i2], sx += node2.x, sy += node2.y;
+      node = nodes[i2], sx += node.x, sy += node.y;
     }
     for (sx = (sx / n2 - x5) * strength, sy = (sy / n2 - y4) * strength, i2 = 0; i2 < n2; ++i2) {
-      node2 = nodes[i2], node2.x -= sx, node2.y -= sy;
+      node = nodes[i2], node.x -= sx, node.y -= sy;
     }
   }
   force.initialize = function(_3) {
@@ -40895,18 +40899,18 @@ function add_default(d3) {
 }
 function add(tree, x5, y4, d3) {
   if (isNaN(x5) || isNaN(y4)) return tree;
-  var parent2, node2 = tree._root, leaf = { data: d3 }, x0 = tree._x0, y0 = tree._y0, x1 = tree._x1, y1 = tree._y1, xm, ym, xp, yp, right, bottom, i2, j3;
-  if (!node2) return tree._root = leaf, tree;
-  while (node2.length) {
+  var parent2, node = tree._root, leaf = { data: d3 }, x0 = tree._x0, y0 = tree._y0, x1 = tree._x1, y1 = tree._y1, xm, ym, xp, yp, right, bottom, i2, j3;
+  if (!node) return tree._root = leaf, tree;
+  while (node.length) {
     if (right = x5 >= (xm = (x0 + x1) / 2)) x0 = xm;
     else x1 = xm;
     if (bottom = y4 >= (ym = (y0 + y1) / 2)) y0 = ym;
     else y1 = ym;
-    if (parent2 = node2, !(node2 = node2[i2 = bottom << 1 | right])) return parent2[i2] = leaf, tree;
+    if (parent2 = node, !(node = node[i2 = bottom << 1 | right])) return parent2[i2] = leaf, tree;
   }
-  xp = +tree._x.call(null, node2.data);
-  yp = +tree._y.call(null, node2.data);
-  if (x5 === xp && y4 === yp) return leaf.next = node2, parent2 ? parent2[i2] = leaf : tree._root = leaf, tree;
+  xp = +tree._x.call(null, node.data);
+  yp = +tree._y.call(null, node.data);
+  if (x5 === xp && y4 === yp) return leaf.next = node, parent2 ? parent2[i2] = leaf : tree._root = leaf, tree;
   do {
     parent2 = parent2 ? parent2[i2] = new Array(4) : tree._root = new Array(4);
     if (right = x5 >= (xm = (x0 + x1) / 2)) x0 = xm;
@@ -40914,7 +40918,7 @@ function add(tree, x5, y4, d3) {
     if (bottom = y4 >= (ym = (y0 + y1) / 2)) y0 = ym;
     else y1 = ym;
   } while ((i2 = bottom << 1 | right) === (j3 = (yp >= ym) << 1 | xp >= xm));
-  return parent2[j3] = node2, parent2[i2] = leaf, tree;
+  return parent2[j3] = node, parent2[i2] = leaf, tree;
 }
 function addAll(data) {
   var d3, i2, n2 = data.length, x5, y4, xz = new Array(n2), yz = new Array(n2), x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
@@ -40943,10 +40947,10 @@ function cover_default(x5, y4) {
     x1 = (x0 = Math.floor(x5)) + 1;
     y1 = (y0 = Math.floor(y4)) + 1;
   } else {
-    var z2 = x1 - x0 || 1, node2 = this._root, parent2, i2;
+    var z2 = x1 - x0 || 1, node = this._root, parent2, i2;
     while (x0 > x5 || x5 >= x1 || y0 > y4 || y4 >= y1) {
       i2 = (y4 < y0) << 1 | x5 < x0;
-      parent2 = new Array(4), parent2[i2] = node2, node2 = parent2, z2 *= 2;
+      parent2 = new Array(4), parent2[i2] = node, node = parent2, z2 *= 2;
       switch (i2) {
         case 0:
           x1 = x0 + z2, y1 = y0 + z2;
@@ -40962,7 +40966,7 @@ function cover_default(x5, y4) {
           break;
       }
     }
-    if (this._root && this._root.length) this._root = node2;
+    if (this._root && this._root.length) this._root = node;
   }
   this._x0 = x0;
   this._y0 = y0;
@@ -40974,10 +40978,10 @@ function cover_default(x5, y4) {
 // node_modules/d3-quadtree/src/data.js
 function data_default2() {
   var data = [];
-  this.visit(function(node2) {
-    if (!node2.length) do
-      data.push(node2.data);
-    while (node2 = node2.next);
+  this.visit(function(node) {
+    if (!node.length) do
+      data.push(node.data);
+    while (node = node.next);
   });
   return data;
 }
@@ -40988,8 +40992,8 @@ function extent_default(_3) {
 }
 
 // node_modules/d3-quadtree/src/quad.js
-function quad_default(node2, x0, y0, x1, y1) {
-  this.node = node2;
+function quad_default(node, x0, y0, x1, y1) {
+  this.node = node;
   this.x0 = x0;
   this.y0 = y0;
   this.x1 = x1;
@@ -40998,8 +41002,8 @@ function quad_default(node2, x0, y0, x1, y1) {
 
 // node_modules/d3-quadtree/src/find.js
 function find_default(x5, y4, radius) {
-  var data, x0 = this._x0, y0 = this._y0, x1, y1, x22, y22, x32 = this._x1, y32 = this._y1, quads = [], node2 = this._root, q2, i2;
-  if (node2) quads.push(new quad_default(node2, x0, y0, x32, y32));
+  var data, x0 = this._x0, y0 = this._y0, x1, y1, x22, y22, x32 = this._x1, y32 = this._y1, quads = [], node = this._root, q2, i2;
+  if (node) quads.push(new quad_default(node, x0, y0, x32, y32));
   if (radius == null) radius = Infinity;
   else {
     x0 = x5 - radius, y0 = y4 - radius;
@@ -41007,14 +41011,14 @@ function find_default(x5, y4, radius) {
     radius *= radius;
   }
   while (q2 = quads.pop()) {
-    if (!(node2 = q2.node) || (x1 = q2.x0) > x32 || (y1 = q2.y0) > y32 || (x22 = q2.x1) < x0 || (y22 = q2.y1) < y0) continue;
-    if (node2.length) {
+    if (!(node = q2.node) || (x1 = q2.x0) > x32 || (y1 = q2.y0) > y32 || (x22 = q2.x1) < x0 || (y22 = q2.y1) < y0) continue;
+    if (node.length) {
       var xm = (x1 + x22) / 2, ym = (y1 + y22) / 2;
       quads.push(
-        new quad_default(node2[3], xm, ym, x22, y22),
-        new quad_default(node2[2], x1, ym, xm, y22),
-        new quad_default(node2[1], xm, y1, x22, ym),
-        new quad_default(node2[0], x1, y1, xm, ym)
+        new quad_default(node[3], xm, ym, x22, y22),
+        new quad_default(node[2], x1, ym, xm, y22),
+        new quad_default(node[1], xm, y1, x22, ym),
+        new quad_default(node[0], x1, y1, xm, ym)
       );
       if (i2 = (y4 >= ym) << 1 | x5 >= xm) {
         q2 = quads[quads.length - 1];
@@ -41022,12 +41026,12 @@ function find_default(x5, y4, radius) {
         quads[quads.length - 1 - i2] = q2;
       }
     } else {
-      var dx = x5 - +this._x.call(null, node2.data), dy = y4 - +this._y.call(null, node2.data), d22 = dx * dx + dy * dy;
+      var dx = x5 - +this._x.call(null, node.data), dy = y4 - +this._y.call(null, node.data), d22 = dx * dx + dy * dy;
       if (d22 < radius) {
         var d3 = Math.sqrt(radius = d22);
         x0 = x5 - d3, y0 = y4 - d3;
         x32 = x5 + d3, y32 = y4 + d3;
-        data = node2.data;
+        data = node.data;
       }
     }
   }
@@ -41037,25 +41041,25 @@ function find_default(x5, y4, radius) {
 // node_modules/d3-quadtree/src/remove.js
 function remove_default3(d3) {
   if (isNaN(x5 = +this._x.call(null, d3)) || isNaN(y4 = +this._y.call(null, d3))) return this;
-  var parent2, node2 = this._root, retainer, previous, next, x0 = this._x0, y0 = this._y0, x1 = this._x1, y1 = this._y1, x5, y4, xm, ym, right, bottom, i2, j3;
-  if (!node2) return this;
-  if (node2.length) while (true) {
+  var parent2, node = this._root, retainer, previous, next, x0 = this._x0, y0 = this._y0, x1 = this._x1, y1 = this._y1, x5, y4, xm, ym, right, bottom, i2, j3;
+  if (!node) return this;
+  if (node.length) while (true) {
     if (right = x5 >= (xm = (x0 + x1) / 2)) x0 = xm;
     else x1 = xm;
     if (bottom = y4 >= (ym = (y0 + y1) / 2)) y0 = ym;
     else y1 = ym;
-    if (!(parent2 = node2, node2 = node2[i2 = bottom << 1 | right])) return this;
-    if (!node2.length) break;
+    if (!(parent2 = node, node = node[i2 = bottom << 1 | right])) return this;
+    if (!node.length) break;
     if (parent2[i2 + 1 & 3] || parent2[i2 + 2 & 3] || parent2[i2 + 3 & 3]) retainer = parent2, j3 = i2;
   }
-  while (node2.data !== d3) if (!(previous = node2, node2 = node2.next)) return this;
-  if (next = node2.next) delete node2.next;
+  while (node.data !== d3) if (!(previous = node, node = node.next)) return this;
+  if (next = node.next) delete node.next;
   if (previous) return next ? previous.next = next : delete previous.next, this;
   if (!parent2) return this._root = next, this;
   next ? parent2[i2] = next : delete parent2[i2];
-  if ((node2 = parent2[0] || parent2[1] || parent2[2] || parent2[3]) && node2 === (parent2[3] || parent2[2] || parent2[1] || parent2[0]) && !node2.length) {
-    if (retainer) retainer[j3] = node2;
-    else this._root = node2;
+  if ((node = parent2[0] || parent2[1] || parent2[2] || parent2[3]) && node === (parent2[3] || parent2[2] || parent2[1] || parent2[0]) && !node.length) {
+    if (retainer) retainer[j3] = node;
+    else this._root = node;
   }
   return this;
 }
@@ -41072,25 +41076,25 @@ function root_default() {
 // node_modules/d3-quadtree/src/size.js
 function size_default2() {
   var size = 0;
-  this.visit(function(node2) {
-    if (!node2.length) do
+  this.visit(function(node) {
+    if (!node.length) do
       ++size;
-    while (node2 = node2.next);
+    while (node = node.next);
   });
   return size;
 }
 
 // node_modules/d3-quadtree/src/visit.js
 function visit_default(callback) {
-  var quads = [], q2, node2 = this._root, child, x0, y0, x1, y1;
-  if (node2) quads.push(new quad_default(node2, this._x0, this._y0, this._x1, this._y1));
+  var quads = [], q2, node = this._root, child, x0, y0, x1, y1;
+  if (node) quads.push(new quad_default(node, this._x0, this._y0, this._x1, this._y1));
   while (q2 = quads.pop()) {
-    if (!callback(node2 = q2.node, x0 = q2.x0, y0 = q2.y0, x1 = q2.x1, y1 = q2.y1) && node2.length) {
+    if (!callback(node = q2.node, x0 = q2.x0, y0 = q2.y0, x1 = q2.x1, y1 = q2.y1) && node.length) {
       var xm = (x0 + x1) / 2, ym = (y0 + y1) / 2;
-      if (child = node2[3]) quads.push(new quad_default(child, xm, ym, x1, y1));
-      if (child = node2[2]) quads.push(new quad_default(child, x0, ym, xm, y1));
-      if (child = node2[1]) quads.push(new quad_default(child, xm, y0, x1, ym));
-      if (child = node2[0]) quads.push(new quad_default(child, x0, y0, xm, ym));
+      if (child = node[3]) quads.push(new quad_default(child, xm, ym, x1, y1));
+      if (child = node[2]) quads.push(new quad_default(child, x0, ym, xm, y1));
+      if (child = node[1]) quads.push(new quad_default(child, xm, y0, x1, ym));
+      if (child = node[0]) quads.push(new quad_default(child, x0, y0, xm, ym));
     }
   }
   return this;
@@ -41101,13 +41105,13 @@ function visitAfter_default(callback) {
   var quads = [], next = [], q2;
   if (this._root) quads.push(new quad_default(this._root, this._x0, this._y0, this._x1, this._y1));
   while (q2 = quads.pop()) {
-    var node2 = q2.node;
-    if (node2.length) {
+    var node = q2.node;
+    if (node.length) {
       var child, x0 = q2.x0, y0 = q2.y0, x1 = q2.x1, y1 = q2.y1, xm = (x0 + x1) / 2, ym = (y0 + y1) / 2;
-      if (child = node2[0]) quads.push(new quad_default(child, x0, y0, xm, ym));
-      if (child = node2[1]) quads.push(new quad_default(child, xm, y0, x1, ym));
-      if (child = node2[2]) quads.push(new quad_default(child, x0, ym, xm, y1));
-      if (child = node2[3]) quads.push(new quad_default(child, xm, ym, x1, y1));
+      if (child = node[0]) quads.push(new quad_default(child, x0, y0, xm, ym));
+      if (child = node[1]) quads.push(new quad_default(child, xm, y0, x1, ym));
+      if (child = node[2]) quads.push(new quad_default(child, x0, ym, xm, y1));
+      if (child = node[3]) quads.push(new quad_default(child, xm, ym, x1, y1));
     }
     next.push(q2);
   }
@@ -41154,15 +41158,15 @@ function leaf_copy(leaf) {
 }
 var treeProto = quadtree.prototype = Quadtree.prototype;
 treeProto.copy = function() {
-  var copy2 = new Quadtree(this._x, this._y, this._x0, this._y0, this._x1, this._y1), node2 = this._root, nodes, child;
-  if (!node2) return copy2;
-  if (!node2.length) return copy2._root = leaf_copy(node2), copy2;
-  nodes = [{ source: node2, target: copy2._root = new Array(4) }];
-  while (node2 = nodes.pop()) {
+  var copy2 = new Quadtree(this._x, this._y, this._x0, this._y0, this._x1, this._y1), node = this._root, nodes, child;
+  if (!node) return copy2;
+  if (!node.length) return copy2._root = leaf_copy(node), copy2;
+  nodes = [{ source: node, target: copy2._root = new Array(4) }];
+  while (node = nodes.pop()) {
     for (var i2 = 0; i2 < 4; ++i2) {
-      if (child = node2.source[i2]) {
-        if (child.length) nodes.push({ source: child, target: node2.target[i2] = new Array(4) });
-        else node2.target[i2] = leaf_copy(child);
+      if (child = node.source[i2]) {
+        if (child.length) nodes.push({ source: child, target: node.target[i2] = new Array(4) });
+        else node.target[i2] = leaf_copy(child);
       }
     }
   }
@@ -41206,28 +41210,28 @@ function collide_default(radius) {
   var nodes, radii, random, strength = 1, iterations = 1;
   if (typeof radius !== "function") radius = constant_default5(radius == null ? 1 : +radius);
   function force() {
-    var i2, n2 = nodes.length, tree, node2, xi, yi, ri, ri2;
+    var i2, n2 = nodes.length, tree, node, xi, yi, ri, ri2;
     for (var k3 = 0; k3 < iterations; ++k3) {
       tree = quadtree(nodes, x3, y2).visitAfter(prepare);
       for (i2 = 0; i2 < n2; ++i2) {
-        node2 = nodes[i2];
-        ri = radii[node2.index], ri2 = ri * ri;
-        xi = node2.x + node2.vx;
-        yi = node2.y + node2.vy;
+        node = nodes[i2];
+        ri = radii[node.index], ri2 = ri * ri;
+        xi = node.x + node.vx;
+        yi = node.y + node.vy;
         tree.visit(apply2);
       }
     }
     function apply2(quad, x0, y0, x1, y1) {
       var data = quad.data, rj = quad.r, r2 = ri + rj;
       if (data) {
-        if (data.index > node2.index) {
+        if (data.index > node.index) {
           var x5 = xi - data.x - data.vx, y4 = yi - data.y - data.vy, l2 = x5 * x5 + y4 * y4;
           if (l2 < r2 * r2) {
             if (x5 === 0) x5 = jiggle_default(random), l2 += x5 * x5;
             if (y4 === 0) y4 = jiggle_default(random), l2 += y4 * y4;
             l2 = (r2 - (l2 = Math.sqrt(l2))) / l2 * strength;
-            node2.vx += (x5 *= l2) * (r2 = (rj *= rj) / (ri2 + rj));
-            node2.vy += (y4 *= l2) * r2;
+            node.vx += (x5 *= l2) * (r2 = (rj *= rj) / (ri2 + rj));
+            node.vy += (y4 *= l2) * r2;
             data.vx -= x5 * (r2 = 1 - r2);
             data.vy -= y4 * r2;
           }
@@ -41245,16 +41249,16 @@ function collide_default(radius) {
       }
     }
   }
-  function initialize() {
+  function initialize2() {
     if (!nodes) return;
-    var i2, n2 = nodes.length, node2;
+    var i2, n2 = nodes.length, node;
     radii = new Array(n2);
-    for (i2 = 0; i2 < n2; ++i2) node2 = nodes[i2], radii[node2.index] = +radius(node2, i2, nodes);
+    for (i2 = 0; i2 < n2; ++i2) node = nodes[i2], radii[node.index] = +radius(node, i2, nodes);
   }
   force.initialize = function(_nodes, _random) {
     nodes = _nodes;
     random = _random;
-    initialize();
+    initialize2();
   };
   force.iterations = function(_3) {
     return arguments.length ? (iterations = +_3, force) : iterations;
@@ -41263,7 +41267,7 @@ function collide_default(radius) {
     return arguments.length ? (strength = +_3, force) : strength;
   };
   force.radius = function(_3) {
-    return arguments.length ? (radius = typeof _3 === "function" ? _3 : constant_default5(+_3), initialize(), force) : radius;
+    return arguments.length ? (radius = typeof _3 === "function" ? _3 : constant_default5(+_3), initialize2(), force) : radius;
   };
   return force;
 }
@@ -41273,20 +41277,20 @@ function index(d3) {
   return d3.index;
 }
 function find2(nodeById, nodeId) {
-  var node2 = nodeById.get(nodeId);
-  if (!node2) throw new Error("node not found: " + nodeId);
-  return node2;
+  var node = nodeById.get(nodeId);
+  if (!node) throw new Error("node not found: " + nodeId);
+  return node;
 }
-function link_default(links) {
+function link_default(links2) {
   var id2 = index, strength = defaultStrength, strengths, distance2 = constant_default5(30), distances, nodes, count2, bias, random, iterations = 1;
-  if (links == null) links = [];
+  if (links2 == null) links2 = [];
   function defaultStrength(link) {
     return 1 / Math.min(count2[link.source.index], count2[link.target.index]);
   }
   function force(alpha) {
-    for (var k3 = 0, n2 = links.length; k3 < iterations; ++k3) {
+    for (var k3 = 0, n2 = links2.length; k3 < iterations; ++k3) {
       for (var i2 = 0, link, source2, target, x5, y4, l2, b2; i2 < n2; ++i2) {
-        link = links[i2], source2 = link.source, target = link.target;
+        link = links2[i2], source2 = link.source, target = link.target;
         x5 = target.x + target.vx - source2.x - source2.vx || jiggle_default(random);
         y4 = target.y + target.vy - source2.y - source2.vy || jiggle_default(random);
         l2 = Math.sqrt(x5 * x5 + y4 * y4);
@@ -41299,41 +41303,41 @@ function link_default(links) {
       }
     }
   }
-  function initialize() {
+  function initialize2() {
     if (!nodes) return;
-    var i2, n2 = nodes.length, m4 = links.length, nodeById = new Map(nodes.map((d3, i3) => [id2(d3, i3, nodes), d3])), link;
+    var i2, n2 = nodes.length, m4 = links2.length, nodeById = new Map(nodes.map((d3, i3) => [id2(d3, i3, nodes), d3])), link;
     for (i2 = 0, count2 = new Array(n2); i2 < m4; ++i2) {
-      link = links[i2], link.index = i2;
+      link = links2[i2], link.index = i2;
       if (typeof link.source !== "object") link.source = find2(nodeById, link.source);
       if (typeof link.target !== "object") link.target = find2(nodeById, link.target);
       count2[link.source.index] = (count2[link.source.index] || 0) + 1;
       count2[link.target.index] = (count2[link.target.index] || 0) + 1;
     }
     for (i2 = 0, bias = new Array(m4); i2 < m4; ++i2) {
-      link = links[i2], bias[i2] = count2[link.source.index] / (count2[link.source.index] + count2[link.target.index]);
+      link = links2[i2], bias[i2] = count2[link.source.index] / (count2[link.source.index] + count2[link.target.index]);
     }
     strengths = new Array(m4), initializeStrength();
     distances = new Array(m4), initializeDistance();
   }
   function initializeStrength() {
     if (!nodes) return;
-    for (var i2 = 0, n2 = links.length; i2 < n2; ++i2) {
-      strengths[i2] = +strength(links[i2], i2, links);
+    for (var i2 = 0, n2 = links2.length; i2 < n2; ++i2) {
+      strengths[i2] = +strength(links2[i2], i2, links2);
     }
   }
   function initializeDistance() {
     if (!nodes) return;
-    for (var i2 = 0, n2 = links.length; i2 < n2; ++i2) {
-      distances[i2] = +distance2(links[i2], i2, links);
+    for (var i2 = 0, n2 = links2.length; i2 < n2; ++i2) {
+      distances[i2] = +distance2(links2[i2], i2, links2);
     }
   }
   force.initialize = function(_nodes, _random) {
     nodes = _nodes;
     random = _random;
-    initialize();
+    initialize2();
   };
   force.links = function(_3) {
-    return arguments.length ? (links = _3, initialize(), force) : links;
+    return arguments.length ? (links2 = _3, initialize2(), force) : links2;
   };
   force.id = function(_3) {
     return arguments.length ? (id2 = _3, force) : id2;
@@ -41380,7 +41384,7 @@ function simulation_default(nodes) {
     }
   }
   function tick(iterations) {
-    var i2, n2 = nodes.length, node2;
+    var i2, n2 = nodes.length, node;
     if (iterations === void 0) iterations = 1;
     for (var k3 = 0; k3 < iterations; ++k3) {
       alpha += (alphaTarget - alpha) * alphaDecay;
@@ -41388,27 +41392,27 @@ function simulation_default(nodes) {
         force(alpha);
       });
       for (i2 = 0; i2 < n2; ++i2) {
-        node2 = nodes[i2];
-        if (node2.fx == null) node2.x += node2.vx *= velocityDecay;
-        else node2.x = node2.fx, node2.vx = 0;
-        if (node2.fy == null) node2.y += node2.vy *= velocityDecay;
-        else node2.y = node2.fy, node2.vy = 0;
+        node = nodes[i2];
+        if (node.fx == null) node.x += node.vx *= velocityDecay;
+        else node.x = node.fx, node.vx = 0;
+        if (node.fy == null) node.y += node.vy *= velocityDecay;
+        else node.y = node.fy, node.vy = 0;
       }
     }
     return simulation;
   }
   function initializeNodes() {
-    for (var i2 = 0, n2 = nodes.length, node2; i2 < n2; ++i2) {
-      node2 = nodes[i2], node2.index = i2;
-      if (node2.fx != null) node2.x = node2.fx;
-      if (node2.fy != null) node2.y = node2.fy;
-      if (isNaN(node2.x) || isNaN(node2.y)) {
+    for (var i2 = 0, n2 = nodes.length, node; i2 < n2; ++i2) {
+      node = nodes[i2], node.index = i2;
+      if (node.fx != null) node.x = node.fx;
+      if (node.fy != null) node.y = node.fy;
+      if (isNaN(node.x) || isNaN(node.y)) {
         var radius = initialRadius * Math.sqrt(0.5 + i2), angle = i2 * initialAngle;
-        node2.x = radius * Math.cos(angle);
-        node2.y = radius * Math.sin(angle);
+        node.x = radius * Math.cos(angle);
+        node.y = radius * Math.sin(angle);
       }
-      if (isNaN(node2.vx) || isNaN(node2.vy)) {
-        node2.vx = node2.vy = 0;
+      if (isNaN(node.vx) || isNaN(node.vy)) {
+        node.vx = node.vy = 0;
       }
     }
   }
@@ -41450,15 +41454,15 @@ function simulation_default(nodes) {
       return arguments.length > 1 ? (_3 == null ? forces.delete(name) : forces.set(name, initializeForce(_3)), simulation) : forces.get(name);
     },
     find: function(x5, y4, radius) {
-      var i2 = 0, n2 = nodes.length, dx, dy, d22, node2, closest;
+      var i2 = 0, n2 = nodes.length, dx, dy, d22, node, closest;
       if (radius == null) radius = Infinity;
       else radius *= radius;
       for (i2 = 0; i2 < n2; ++i2) {
-        node2 = nodes[i2];
-        dx = x5 - node2.x;
-        dy = y4 - node2.y;
+        node = nodes[i2];
+        dx = x5 - node.x;
+        dy = y4 - node.y;
         d22 = dx * dx + dy * dy;
-        if (d22 < radius) closest = node2, radius = d22;
+        if (d22 < radius) closest = node, radius = d22;
       }
       return closest;
     },
@@ -41470,16 +41474,16 @@ function simulation_default(nodes) {
 
 // node_modules/d3-force/src/manyBody.js
 function manyBody_default() {
-  var nodes, node2, random, alpha, strength = constant_default5(-30), strengths, distanceMin2 = 1, distanceMax2 = Infinity, theta2 = 0.81;
+  var nodes, node, random, alpha, strength = constant_default5(-30), strengths, distanceMin2 = 1, distanceMax2 = Infinity, theta2 = 0.81;
   function force(_3) {
     var i2, n2 = nodes.length, tree = quadtree(nodes, x4, y3).visitAfter(accumulate);
-    for (alpha = _3, i2 = 0; i2 < n2; ++i2) node2 = nodes[i2], tree.visit(apply2);
+    for (alpha = _3, i2 = 0; i2 < n2; ++i2) node = nodes[i2], tree.visit(apply2);
   }
-  function initialize() {
+  function initialize2() {
     if (!nodes) return;
-    var i2, n2 = nodes.length, node3;
+    var i2, n2 = nodes.length, node2;
     strengths = new Array(n2);
-    for (i2 = 0; i2 < n2; ++i2) node3 = nodes[i2], strengths[node3.index] = +strength(node3, i2, nodes);
+    for (i2 = 0; i2 < n2; ++i2) node2 = nodes[i2], strengths[node2.index] = +strength(node2, i2, nodes);
   }
   function accumulate(quad) {
     var strength2 = 0, q2, c3, weight = 0, x5, y4, i2;
@@ -41503,37 +41507,37 @@ function manyBody_default() {
   }
   function apply2(quad, x1, _3, x22) {
     if (!quad.value) return true;
-    var x5 = quad.x - node2.x, y4 = quad.y - node2.y, w2 = x22 - x1, l2 = x5 * x5 + y4 * y4;
+    var x5 = quad.x - node.x, y4 = quad.y - node.y, w2 = x22 - x1, l2 = x5 * x5 + y4 * y4;
     if (w2 * w2 / theta2 < l2) {
       if (l2 < distanceMax2) {
         if (x5 === 0) x5 = jiggle_default(random), l2 += x5 * x5;
         if (y4 === 0) y4 = jiggle_default(random), l2 += y4 * y4;
         if (l2 < distanceMin2) l2 = Math.sqrt(distanceMin2 * l2);
-        node2.vx += x5 * quad.value * alpha / l2;
-        node2.vy += y4 * quad.value * alpha / l2;
+        node.vx += x5 * quad.value * alpha / l2;
+        node.vy += y4 * quad.value * alpha / l2;
       }
       return true;
     } else if (quad.length || l2 >= distanceMax2) return;
-    if (quad.data !== node2 || quad.next) {
+    if (quad.data !== node || quad.next) {
       if (x5 === 0) x5 = jiggle_default(random), l2 += x5 * x5;
       if (y4 === 0) y4 = jiggle_default(random), l2 += y4 * y4;
       if (l2 < distanceMin2) l2 = Math.sqrt(distanceMin2 * l2);
     }
     do
-      if (quad.data !== node2) {
+      if (quad.data !== node) {
         w2 = strengths[quad.data.index] * alpha / l2;
-        node2.vx += x5 * w2;
-        node2.vy += y4 * w2;
+        node.vx += x5 * w2;
+        node.vy += y4 * w2;
       }
     while (quad = quad.next);
   }
   force.initialize = function(_nodes, _random) {
     nodes = _nodes;
     random = _random;
-    initialize();
+    initialize2();
   };
   force.strength = function(_3) {
-    return arguments.length ? (strength = typeof _3 === "function" ? _3 : constant_default5(+_3), initialize(), force) : strength;
+    return arguments.length ? (strength = typeof _3 === "function" ? _3 : constant_default5(+_3), initialize2(), force) : strength;
   };
   force.distanceMin = function(_3) {
     return arguments.length ? (distanceMin2 = _3 * _3, force) : Math.sqrt(distanceMin2);
@@ -41555,12 +41559,12 @@ function radial_default(radius, x5, y4) {
   if (y4 == null) y4 = 0;
   function force(alpha) {
     for (var i2 = 0, n2 = nodes.length; i2 < n2; ++i2) {
-      var node2 = nodes[i2], dx = node2.x - x5 || 1e-6, dy = node2.y - y4 || 1e-6, r2 = Math.sqrt(dx * dx + dy * dy), k3 = (radiuses[i2] - r2) * strengths[i2] * alpha / r2;
-      node2.vx += dx * k3;
-      node2.vy += dy * k3;
+      var node = nodes[i2], dx = node.x - x5 || 1e-6, dy = node.y - y4 || 1e-6, r2 = Math.sqrt(dx * dx + dy * dy), k3 = (radiuses[i2] - r2) * strengths[i2] * alpha / r2;
+      node.vx += dx * k3;
+      node.vy += dy * k3;
     }
   }
-  function initialize() {
+  function initialize2() {
     if (!nodes) return;
     var i2, n2 = nodes.length;
     strengths = new Array(n2);
@@ -41571,13 +41575,13 @@ function radial_default(radius, x5, y4) {
     }
   }
   force.initialize = function(_3) {
-    nodes = _3, initialize();
+    nodes = _3, initialize2();
   };
   force.strength = function(_3) {
-    return arguments.length ? (strength = typeof _3 === "function" ? _3 : constant_default5(+_3), initialize(), force) : strength;
+    return arguments.length ? (strength = typeof _3 === "function" ? _3 : constant_default5(+_3), initialize2(), force) : strength;
   };
   force.radius = function(_3) {
-    return arguments.length ? (radius = typeof _3 === "function" ? _3 : constant_default5(+_3), initialize(), force) : radius;
+    return arguments.length ? (radius = typeof _3 === "function" ? _3 : constant_default5(+_3), initialize2(), force) : radius;
   };
   force.x = function(_3) {
     return arguments.length ? (x5 = +_3, force) : x5;
@@ -41593,11 +41597,11 @@ function x_default2(x5) {
   var strength = constant_default5(0.1), nodes, strengths, xz;
   if (typeof x5 !== "function") x5 = constant_default5(x5 == null ? 0 : +x5);
   function force(alpha) {
-    for (var i2 = 0, n2 = nodes.length, node2; i2 < n2; ++i2) {
-      node2 = nodes[i2], node2.vx += (xz[i2] - node2.x) * strengths[i2] * alpha;
+    for (var i2 = 0, n2 = nodes.length, node; i2 < n2; ++i2) {
+      node = nodes[i2], node.vx += (xz[i2] - node.x) * strengths[i2] * alpha;
     }
   }
-  function initialize() {
+  function initialize2() {
     if (!nodes) return;
     var i2, n2 = nodes.length;
     strengths = new Array(n2);
@@ -41608,13 +41612,13 @@ function x_default2(x5) {
   }
   force.initialize = function(_3) {
     nodes = _3;
-    initialize();
+    initialize2();
   };
   force.strength = function(_3) {
-    return arguments.length ? (strength = typeof _3 === "function" ? _3 : constant_default5(+_3), initialize(), force) : strength;
+    return arguments.length ? (strength = typeof _3 === "function" ? _3 : constant_default5(+_3), initialize2(), force) : strength;
   };
   force.x = function(_3) {
-    return arguments.length ? (x5 = typeof _3 === "function" ? _3 : constant_default5(+_3), initialize(), force) : x5;
+    return arguments.length ? (x5 = typeof _3 === "function" ? _3 : constant_default5(+_3), initialize2(), force) : x5;
   };
   return force;
 }
@@ -41624,11 +41628,11 @@ function y_default2(y4) {
   var strength = constant_default5(0.1), nodes, strengths, yz;
   if (typeof y4 !== "function") y4 = constant_default5(y4 == null ? 0 : +y4);
   function force(alpha) {
-    for (var i2 = 0, n2 = nodes.length, node2; i2 < n2; ++i2) {
-      node2 = nodes[i2], node2.vy += (yz[i2] - node2.y) * strengths[i2] * alpha;
+    for (var i2 = 0, n2 = nodes.length, node; i2 < n2; ++i2) {
+      node = nodes[i2], node.vy += (yz[i2] - node.y) * strengths[i2] * alpha;
     }
   }
-  function initialize() {
+  function initialize2() {
     if (!nodes) return;
     var i2, n2 = nodes.length;
     strengths = new Array(n2);
@@ -41639,13 +41643,13 @@ function y_default2(y4) {
   }
   force.initialize = function(_3) {
     nodes = _3;
-    initialize();
+    initialize2();
   };
   force.strength = function(_3) {
-    return arguments.length ? (strength = typeof _3 === "function" ? _3 : constant_default5(+_3), initialize(), force) : strength;
+    return arguments.length ? (strength = typeof _3 === "function" ? _3 : constant_default5(+_3), initialize2(), force) : strength;
   };
   force.y = function(_3) {
-    return arguments.length ? (y4 = typeof _3 === "function" ? _3 : constant_default5(+_3), initialize(), force) : y4;
+    return arguments.length ? (y4 = typeof _3 === "function" ? _3 : constant_default5(+_3), initialize2(), force) : y4;
   };
   return force;
 }
@@ -41694,9 +41698,9 @@ Transform.prototype = {
 };
 var identity3 = new Transform(1, 0, 0);
 transform2.prototype = Transform.prototype;
-function transform2(node2) {
-  while (!node2.__zoom) if (!(node2 = node2.parentNode)) return identity3;
-  return node2.__zoom;
+function transform2(node) {
+  while (!node.__zoom) if (!(node = node.parentNode)) return identity3;
+  return node.__zoom;
 }
 
 // src/lasso.js
@@ -42497,6 +42501,22 @@ function keys(object) {
 }
 var keys_default = keys;
 
+// node_modules/lodash-es/assign.js
+var objectProto9 = Object.prototype;
+var hasOwnProperty7 = objectProto9.hasOwnProperty;
+var assign = createAssigner_default(function(object, source2) {
+  if (isPrototype_default(source2) || isArrayLike_default(source2)) {
+    copyObject_default(source2, keys_default(source2), object);
+    return;
+  }
+  for (var key in source2) {
+    if (hasOwnProperty7.call(source2, key)) {
+      assignValue_default(object, key, source2[key]);
+    }
+  }
+});
+var assign_default = assign;
+
 // node_modules/lodash-es/_nativeKeysIn.js
 function nativeKeysIn(object) {
   var result = [];
@@ -42510,15 +42530,15 @@ function nativeKeysIn(object) {
 var nativeKeysIn_default = nativeKeysIn;
 
 // node_modules/lodash-es/_baseKeysIn.js
-var objectProto9 = Object.prototype;
-var hasOwnProperty7 = objectProto9.hasOwnProperty;
+var objectProto10 = Object.prototype;
+var hasOwnProperty8 = objectProto10.hasOwnProperty;
 function baseKeysIn(object) {
   if (!isObject_default(object)) {
     return nativeKeysIn_default(object);
   }
   var isProto = isPrototype_default(object), result = [];
   for (var key in object) {
-    if (!(key == "constructor" && (isProto || !hasOwnProperty7.call(object, key)))) {
+    if (!(key == "constructor" && (isProto || !hasOwnProperty8.call(object, key)))) {
       result.push(key);
     }
   }
@@ -42568,24 +42588,24 @@ var hashDelete_default = hashDelete;
 
 // node_modules/lodash-es/_hashGet.js
 var HASH_UNDEFINED = "__lodash_hash_undefined__";
-var objectProto10 = Object.prototype;
-var hasOwnProperty8 = objectProto10.hasOwnProperty;
+var objectProto11 = Object.prototype;
+var hasOwnProperty9 = objectProto11.hasOwnProperty;
 function hashGet(key) {
   var data = this.__data__;
   if (nativeCreate_default) {
     var result = data[key];
     return result === HASH_UNDEFINED ? void 0 : result;
   }
-  return hasOwnProperty8.call(data, key) ? data[key] : void 0;
+  return hasOwnProperty9.call(data, key) ? data[key] : void 0;
 }
 var hashGet_default = hashGet;
 
 // node_modules/lodash-es/_hashHas.js
-var objectProto11 = Object.prototype;
-var hasOwnProperty9 = objectProto11.hasOwnProperty;
+var objectProto12 = Object.prototype;
+var hasOwnProperty10 = objectProto12.hasOwnProperty;
 function hashHas(key) {
   var data = this.__data__;
-  return nativeCreate_default ? data[key] !== void 0 : hasOwnProperty9.call(data, key);
+  return nativeCreate_default ? data[key] !== void 0 : hasOwnProperty10.call(data, key);
 }
 var hashHas_default = hashHas;
 
@@ -42908,9 +42928,9 @@ var getPrototype_default = getPrototype;
 // node_modules/lodash-es/isPlainObject.js
 var objectTag2 = "[object Object]";
 var funcProto3 = Function.prototype;
-var objectProto12 = Object.prototype;
+var objectProto13 = Object.prototype;
 var funcToString3 = funcProto3.toString;
-var hasOwnProperty10 = objectProto12.hasOwnProperty;
+var hasOwnProperty11 = objectProto13.hasOwnProperty;
 var objectCtorString = funcToString3.call(Object);
 function isPlainObject(value) {
   if (!isObjectLike_default(value) || baseGetTag_default(value) != objectTag2) {
@@ -42920,7 +42940,7 @@ function isPlainObject(value) {
   if (proto === null) {
     return true;
   }
-  var Ctor = hasOwnProperty10.call(proto, "constructor") && proto.constructor;
+  var Ctor = hasOwnProperty11.call(proto, "constructor") && proto.constructor;
   return typeof Ctor == "function" && Ctor instanceof Ctor && funcToString3.call(Ctor) == objectCtorString;
 }
 var isPlainObject_default = isPlainObject;
@@ -43039,8 +43059,8 @@ function stubArray() {
 var stubArray_default = stubArray;
 
 // node_modules/lodash-es/_getSymbols.js
-var objectProto13 = Object.prototype;
-var propertyIsEnumerable2 = objectProto13.propertyIsEnumerable;
+var objectProto14 = Object.prototype;
+var propertyIsEnumerable2 = objectProto14.propertyIsEnumerable;
 var nativeGetSymbols = Object.getOwnPropertySymbols;
 var getSymbols = !nativeGetSymbols ? stubArray_default : function(object) {
   if (object == null) {
@@ -43330,8 +43350,8 @@ var equalByTag_default = equalByTag;
 
 // node_modules/lodash-es/_equalObjects.js
 var COMPARE_PARTIAL_FLAG3 = 1;
-var objectProto14 = Object.prototype;
-var hasOwnProperty11 = objectProto14.hasOwnProperty;
+var objectProto15 = Object.prototype;
+var hasOwnProperty12 = objectProto15.hasOwnProperty;
 function equalObjects(object, other, bitmask, customizer, equalFunc, stack) {
   var isPartial = bitmask & COMPARE_PARTIAL_FLAG3, objProps = getAllKeys_default(object), objLength = objProps.length, othProps = getAllKeys_default(other), othLength = othProps.length;
   if (objLength != othLength && !isPartial) {
@@ -43340,7 +43360,7 @@ function equalObjects(object, other, bitmask, customizer, equalFunc, stack) {
   var index2 = objLength;
   while (index2--) {
     var key = objProps[index2];
-    if (!(isPartial ? key in other : hasOwnProperty11.call(other, key))) {
+    if (!(isPartial ? key in other : hasOwnProperty12.call(other, key))) {
       return false;
     }
   }
@@ -43382,8 +43402,8 @@ var COMPARE_PARTIAL_FLAG4 = 1;
 var argsTag3 = "[object Arguments]";
 var arrayTag2 = "[object Array]";
 var objectTag4 = "[object Object]";
-var objectProto15 = Object.prototype;
-var hasOwnProperty12 = objectProto15.hasOwnProperty;
+var objectProto16 = Object.prototype;
+var hasOwnProperty13 = objectProto16.hasOwnProperty;
 function baseIsEqualDeep(object, other, bitmask, customizer, equalFunc, stack) {
   var objIsArr = isArray_default(object), othIsArr = isArray_default(other), objTag = objIsArr ? arrayTag2 : getTag_default(object), othTag = othIsArr ? arrayTag2 : getTag_default(other);
   objTag = objTag == argsTag3 ? objectTag4 : objTag;
@@ -43401,7 +43421,7 @@ function baseIsEqualDeep(object, other, bitmask, customizer, equalFunc, stack) {
     return objIsArr || isTypedArray_default(object) ? equalArrays_default(object, other, bitmask, customizer, equalFunc, stack) : equalByTag_default(object, other, objTag, bitmask, customizer, equalFunc, stack);
   }
   if (!(bitmask & COMPARE_PARTIAL_FLAG4)) {
-    var objIsWrapped = objIsObj && hasOwnProperty12.call(object, "__wrapped__"), othIsWrapped = othIsObj && hasOwnProperty12.call(other, "__wrapped__");
+    var objIsWrapped = objIsObj && hasOwnProperty13.call(object, "__wrapped__"), othIsWrapped = othIsObj && hasOwnProperty13.call(other, "__wrapped__");
     if (objIsWrapped || othIsWrapped) {
       var objUnwrapped = objIsWrapped ? object.value() : object, othUnwrapped = othIsWrapped ? other.value() : other;
       stack || (stack = new Stack_default());
@@ -43960,8 +43980,8 @@ var parent_default = parent;
 // node_modules/lodash-es/isEmpty.js
 var mapTag4 = "[object Map]";
 var setTag4 = "[object Set]";
-var objectProto16 = Object.prototype;
-var hasOwnProperty13 = objectProto16.hasOwnProperty;
+var objectProto17 = Object.prototype;
+var hasOwnProperty14 = objectProto17.hasOwnProperty;
 function isEmpty(value) {
   if (value == null) {
     return true;
@@ -43977,7 +43997,7 @@ function isEmpty(value) {
     return !baseKeys_default(value).length;
   }
   for (var key in value) {
-    if (hasOwnProperty13.call(value, key)) {
+    if (hasOwnProperty14.call(value, key)) {
       return false;
     }
   }
@@ -44247,8 +44267,8 @@ var default_sim_params = {
     center: { enabled: true, type: "forceCenter", params: default_center_params }
   }
 };
-var current_ns = (node2) => {
-  let gd = node2.graphicsData[0];
+var current_ns = (node) => {
+  let gd = node.graphicsData[0];
   let c_ns = {
     lineStyle: { size: gd.lineWidth, color: gd.lineColor },
     color: gd.fillColor,
@@ -44261,8 +44281,8 @@ var current_ns = (node2) => {
   }
   return clean(c_ns);
 };
-var default_ns = (node2) => {
-  let c_ns = current_ns(node2);
+var default_ns = (node) => {
+  let c_ns = current_ns(node);
   let res = node_style;
   if ("alpha" in c_ns) {
     res.alpha = c_ns.alpha;
@@ -44285,67 +44305,62 @@ var clean = (obj) => {
   Object.keys(obj).forEach((key) => obj[key] == null && delete obj[key]);
   return obj;
 };
-var apply_sim = (sim, params) => {
+var apply_sim = (sim2, params) => {
   forOwn_default(params, function(value, key) {
     if (key != "force") {
       console.log(key.toString() + " = " + value.toString());
-      sim[key](value);
+      sim2[key](value);
     }
   });
-  return sim;
+  return sim2;
 };
-var apply_force = (sim, params) => {
+var apply_force = (sim2, params) => {
   forOwn_default(params, function(settings, forcename) {
     if (settings.enabled) {
-      sim.force(forcename, src_exports[settings.type]());
+      sim2.force(forcename, src_exports[settings.type]());
       forOwn_default(settings.params, function(param_value, param_name) {
         console.log(forcename.toString() + ": " + param_name.toString() + " = " + param_value.toString());
-        sim.force(forcename)[param_name](param_value);
+        sim2.force(forcename)[param_name](param_value);
       });
     }
   });
-  return sim;
+  return sim2;
 };
 var scale_nodes = (nodes, w2, h2) => {
   let scale_f = make_scale(w2, h2);
-  nodes.forEach((node2) => {
-    if (!("x" in node2)) {
-      node2.x = Math.random();
+  nodes.forEach((node) => {
+    if (!("x" in node)) {
+      node.x = Math.random();
     }
-    if (!("y" in node2)) {
-      node2.y = Math.random();
+    if (!("y" in node)) {
+      node.y = Math.random();
     }
-    let xy = scale_f.scale([node2.x, node2.y]);
-    node2.x = xy[0];
-    node2.y = xy[1];
+    let xy = scale_f.scale([node.x, node.y]);
+    node.x = xy[0];
+    node.y = xy[1];
   });
   return nodes;
 };
-var register_ticker = (app, stage) => {
-  let dispatcher = dispatch_default2("tick", "animate", "stop", "restart");
+var register_ticker = (app2, stage) => {
+  let dispatcher2 = dispatch_default2("tick", "animate", "stop", "restart");
   let end_loop = false;
-  let ticker = app.ticker;
+  const ticker = Ticker.shared;
   ticker.autoStart = false;
   ticker.stop();
   ticker.maxFPS = 30;
-  function animate(time) {
-    ticker.update(time);
-    app.renderer.render(stage);
-    if (!end_loop) {
-      requestAnimationFrame(animate);
-    }
-    dispatcher.call("tick", this);
-  }
-  dispatcher.on("stop", function() {
+  ticker.add((ticker2) => {
+    dispatcher2.call("tick", void 0);
+  });
+  dispatcher2.on("stop", function() {
     end_loop = true;
     ticker.stop();
     console.log("ticker stopped");
   });
-  dispatcher.on("restart", function() {
+  dispatcher2.on("restart", function() {
     end_loop = false;
     ticker.start();
   });
-  return [ticker, dispatcher];
+  return [ticker, dispatcher2];
 };
 var clear_stage = (stage) => {
   for (var i2 = stage.children.length - 1; i2 >= 0; i2--) {
@@ -44353,20 +44368,21 @@ var clear_stage = (stage) => {
   }
   ;
 };
-var create_viewport = (app, sw, sh, ww = sw, wh = sh) => {
+var create_viewport = (app2, sw, sh, ww = sw, wh = sh) => {
   var viewport = new et({
     screenWidth: sw,
     screenHeight: sh,
     worldWidth: ww,
     worldHeight: wh,
-    events: app.renderer.events
+    events: app2.renderer.events
     // this changed; app must be initialized
+    // stopPropagation: true, 
   });
   return viewport;
 };
 var generate_node_graphics = (nodes) => {
-  return map_default(nodes, (node2) => {
-    return Object.assign(draw_node(new Graphics()), node2);
+  return map_default(nodes, (node) => {
+    return Object.assign(draw_node(new Graphics()), node);
   });
 };
 var generate_links_graphic = () => {
@@ -44378,21 +44394,17 @@ var generate_polygon_graphics = (polygons) => {
     return polygon;
   });
 };
-var draw_node = (node2, ns = node_style) => {
-  node2.clear();
-  node2.circle(0, 0, ns.radius).stroke({ width: ns.lineStyle.size, color: ns.lineStyle.color }).fill({ color: ns.color, alpha: ns.alpha });
-  return node2;
+var draw_node = (node, ns = node_style) => {
+  node.clear();
+  node.circle(0, 0, ns.radius).stroke({ width: ns.lineStyle.size, color: ns.lineStyle.color }).fill({ color: ns.color, alpha: ns.alpha });
+  return node;
 };
 var draw_nodes = (nodes, ns = node_style) => {
   if (ns.constructor === Array && ns.length == nodes.length) {
-    nodes.forEach((node2, i2) => {
-      draw_node(node2, merge_default3(default_ns(node2), ns[i2]));
+    nodes.forEach((node, i2) => {
+      draw_node(node, merge_default3(default_ns(node), ns[i2]));
     });
   } else if (ns.constructor == Object) {
-    let ns_new = merge_default3(default_ns(node), ns);
-    nodes.forEach((node2) => {
-      draw_node(node2, ns_new);
-    });
   }
 };
 var draw_link = (link, link_gfx, ls = line_style) => {
@@ -44400,23 +44412,25 @@ var draw_link = (link, link_gfx, ls = line_style) => {
   link_gfx.moveTo(source2.x, source2.y).lineTo(target.x, target.y).stroke({ width: ls.lineWidth, color: ls.color });
   return link;
 };
-var draw_links = (links, link_gfx, ls = line_style) => {
-  if (ls.constructor === Array && ls.length == links.length) {
-    links.forEach((link, i2) => {
+var draw_links = (links2, link_gfx, ls = line_style) => {
+  if (ls.constructor === Array && ls.length == links2.length) {
+    links2.forEach((link, i2) => {
       draw_link(link, link_gfx, merge_default3(line_style, ls[i2]));
     });
   } else if (ls.constructor == Object) {
     let new_ls = merge_default3(line_style, ls);
     link_gfx.clear();
-    links.forEach((link) => {
-      draw_link(link, link_gfx, new_ls);
+    links2.forEach((link) => {
+      const { source: source2, target } = link;
+      link_gfx.moveTo(source2.x, source2.y).lineTo(target.x, target.y);
     });
+    link_gfx.stroke({ width: new_ls.lineWidth, color: new_ls.color });
   }
 };
 var _draw_polygon = (polygon, poly_gfx) => {
   if (polygon.nodes) {
-    polygon.points = flatMap_default(polygon.nodes, (node2) => {
-      return [node2.x, node2.y];
+    polygon.points = flatMap_default(polygon.nodes, (node) => {
+      return [node.x, node.y];
     });
   }
   poly_gfx.drawPolygon(polygon);
@@ -44462,18 +44476,18 @@ var disable_interactive = (arr, acc = identity5) => {
     acc(item).interactive = false;
   });
 };
-var drag_dispatcher = (node2) => {
+var drag_dispatcher = (node) => {
   let dsp = dispatch_default2("start", "end", "dragging");
-  node2.on("pointerdown", function(e3) {
-    dsp.call("start", node2, e3);
+  node.on("pointerdown", function(e3) {
+    dsp.call("start", node, e3);
   });
-  node2.on("pointerup", function(e3) {
-    dsp.call("end", node2, e3);
+  node.on("pointerup", function(e3) {
+    dsp.call("end", node, e3);
   });
-  node2.on("pointermove", function(e3) {
+  node.on("pointermove", function(e3) {
     if (this.dragging) {
       let coords = this.data.getLocalPosition(this.parent);
-      dsp.call("dragging", node2, e3, coords);
+      dsp.call("dragging", node, e3, coords);
     }
   });
   return dsp;
@@ -44482,8 +44496,8 @@ var pixi_drag = (pixi_obj) => {
   if (!pixi_obj.interactive) {
     pixi_obj.interactive = true;
   }
-  return function(dispatcher) {
-    dispatcher.on("start.pixi", function(e3) {
+  return function(dispatcher2) {
+    dispatcher2.on("start.pixi", function(e3) {
       if (this.parent.pausePlugin) {
         this.parent.pausePlugin("drag");
       }
@@ -44497,13 +44511,13 @@ var pixi_drag = (pixi_obj) => {
     }).on("dragging.pixi", function(e3, coords) {
       this.x = coords.x, this.y = coords.y;
     });
-    return dispatcher;
+    return dispatcher2;
   };
 };
-var force_drag = (sim) => {
-  return function(dispatcher) {
-    dispatcher.on("start.force", function(e3) {
-      sim.alphaTarget(0.3).restart();
+var force_drag = (sim2) => {
+  return function(dispatcher2) {
+    dispatcher2.on("start.force", function(e3) {
+      sim2.alphaTarget(0.3).restart();
       this.fx = this.x;
       this.fy = this.y;
     }).on("dragging.force", function(e3, coords) {
@@ -44511,12 +44525,12 @@ var force_drag = (sim) => {
       this.fy = coords.y;
     }).on("end.force", function(e3) {
       if (!this.dragging) {
-        sim.alphaTarget(0);
+        sim2.alphaTarget(0);
       }
       this.fx = null;
       this.fy = null;
     });
-    return dispatcher;
+    return dispatcher2;
   };
 };
 var stage_items = (stage, arr, acc = identity5) => {
@@ -44528,15 +44542,15 @@ var insert_nodes = (nodes, new_nodes) => {
   let ins_nodes = generate_node_graphics(differenceBy_default(new_nodes, nodes, "id"));
   return concat_default(nodes, ins_nodes);
 };
-var remove_nodes = (node_ids, nodes, links, stage) => {
-  remove_default4(links, (link) => {
+var remove_nodes = (node_ids, nodes, links2, stage) => {
+  remove_default4(links2, (link) => {
     return includes_default(node_ids, link.source.id) || includes_default(node_ids, link.target.id);
   });
-  let removed_nodes = remove_default4(nodes, (node2) => {
-    return includes_default(node_ids, node2.id);
+  let removed_nodes = remove_default4(nodes, (node) => {
+    return includes_default(node_ids, node.id);
   });
-  removed_nodes.forEach((node2) => {
-    stage.removeChild(node2);
+  removed_nodes.forEach((node) => {
+    stage.removeChild(node);
   });
 };
 var update_node_coords = (nodes) => {
@@ -44548,12 +44562,12 @@ var update_node_coords = (nodes) => {
 };
 var make_group = (nodes) => {
   let container = new Container();
-  nodes.forEach((node2) => {
-    container.addChild(node2);
+  nodes.forEach((node) => {
+    container.addChild(node);
   });
   return container;
 };
-var enable_force = () => {
+var force_sim = () => {
   return simulation_default();
 };
 var set_dpi = (canvas, dpi) => {
@@ -44573,44 +44587,54 @@ var set_dpi = (canvas, dpi) => {
   ctx.drawImage(backup, 0, 0);
   ctx.setTransform(scaleFactor, 0, 0, scaleFactor, 0, 0);
 };
-function default_force_settings(sim, app, nodes, links) {
+function default_force_settings(sim2, app2, nodes, links2) {
   if (arguments.length < 4) {
     return default_sim_params;
   } else {
-    const parent2 = app.canvas.parentNode;
+    const parent2 = app2.canvas.parentNode;
     const width = parent2.clientWidth, height = parent2.clientHeight;
     let center = [width / 2, height / 2];
-    sim.nodes(nodes);
-    apply_sim(sim, default_sim_params);
-    apply_force(sim, default_sim_params.force);
-    sim.force("center").x(center[0]).y(center[1]);
-    sim.force("link").links(links);
+    sim2.nodes(nodes);
+    apply_sim(sim2, default_sim_params);
+    apply_force(sim2, default_sim_params.force);
+    sim2.force("center").x(center[0]).y(center[1]);
+    sim2.force("link").links(links2);
   }
 }
-var enable_resize = (app, vp = null) => {
-  app.renderer.autoResize = true;
-  const parent2 = app.canvas.parentNode;
+var enable_resize = (app2, vp = null) => {
+  app2.renderer.autoResize = true;
+  const parent2 = app2.canvas.parentNode;
   const _resize = (w2 = parent2.clientWidth, h2 = parent2.clientHeight) => {
     console.log("calling resize");
   };
   return _resize;
 };
-var resolve_links = (nodes, links) => {
-  links.forEach((link) => {
+var resolve_links = (nodes, links2) => {
+  links2.forEach((link) => {
     if (!(link.source instanceof Graphics)) {
-      link.source = nodes.find((node2) => {
-        return node2.id == link.source;
+      link.source = nodes.find((node) => {
+        return node.id == link.source;
       });
     }
     if (!(link.target instanceof Graphics)) {
-      link.target = nodes.find((node2) => {
-        return node2.id == link.target;
+      link.target = nodes.find((node) => {
+        return node.id == link.target;
       });
     }
   });
 };
+var resolve_links_index = (nodes, links2) => {
+  links2.forEach((link) => {
+    link.source = nodes.findIndex((node) => {
+      return node.id == link.source;
+    });
+    link.target = nodes.findIndex((node) => {
+      return node.id == link.target;
+    });
+  });
+};
 var enable_lasso = (visRootID) => {
-  let dispatcher = dispatch_default2("start", "selected");
+  let dispatcher2 = dispatch_default2("start", "selected");
   const visRoot = select_default2("#" + visRootID);
   var interaction_svg = visRoot.append("svg").attr("id", "selection_svg").attr("width", visRoot.style("width")).attr("height", visRoot.style("height")).style("position", "absolute").style("top", 0).style("left", 0).style("display", "none");
   var lassoInstance = lasso();
@@ -44618,19 +44642,19 @@ var enable_lasso = (visRootID) => {
   lassoInstance.on("end", function(lassoPolygon) {
     interaction_svg.style("display", "none");
     console.log(local_nodes);
-    const selected_nodes = local_nodes.filter((node2) => {
-      let xy = [node2.x, node2.y];
+    const selected_nodes = local_nodes.filter((node) => {
+      let xy = [node.x, node.y];
       return contains_default(lassoPolygon, xy);
     });
     local_nodes = null;
-    dispatcher.call("selected", this, selected_nodes);
+    dispatcher2.call("selected", this, selected_nodes);
   });
-  dispatcher.on("start", function(nodes) {
+  dispatcher2.on("start", function(nodes) {
     local_nodes = nodes;
     interaction_svg.style("display", "inline");
     lassoInstance(interaction_svg);
   });
-  return dispatcher;
+  return dispatcher2;
 };
 var enable_drag_container = (container) => {
   container.interactive = true;
@@ -44645,33 +44669,70 @@ var group_items = (items, acc = identity5) => {
   });
   return group;
 };
+var Pixiplex = class {
+  constructor(width = 250, height = 250) {
+    this.width = width;
+    this.height = height;
+    this.nodes = null;
+    this.links = null;
+    this.polygons = null;
+    this.nodes_gfx = null;
+    this.links_gfx = null;
+    this.polygons_gfx = null;
+    this.sim = null;
+    this.sim_params = null;
+  }
+  // Should be called one
+  initialize(options) {
+    this.view = document.createElement("canvas");
+    this.view.style.width = this.width + "px";
+    this.view.style.height = this.height + "px";
+    this.app = new Application();
+    let app_params = {
+      canvas: this.view,
+      antialias: true,
+      backgroundColor: 16777215,
+      resolution: 1.2 * devicePixelRatio,
+      //- resolution: 1.0,
+      sharedTicker: true,
+      transparent: false,
+      autoResize: true,
+      forceCanvas: false,
+      // NOTE: this can force CPU? 
+      autoStart: false
+      // <- note the animation updates won't be immediate! 
+    };
+    this.app.init(assign_default(app_params, options));
+  }
+};
 
 // src/widget.js
-async function start_pixi(width = 200, height = 200) {
-  const app = new Application();
+async function new_pixi(width = 200, height = 200) {
+  const app2 = new Application();
   var view = document.createElement("canvas");
   view.style.width = width + "px";
   view.style.height = height + "px";
-  await app.init({
+  await app2.init({
     canvas: view,
     width,
     height,
     background: "#ededed",
     // resizeTo: window,
+    sharedTicker: true,
     autoResize: true,
     antialias: true,
     autoDensity: true,
-    resolution: 2 * devicePixelRatio,
-    autoStart: true
+    resolution: 1.2 * devicePixelRatio,
+    autoStart: false
     // <- note the animation updates won't be immediate! 
   });
-  var vp = create_viewport(app, width, height);
+  var vp = create_viewport(app2, width, height);
   const sc = 3;
   var vp_params = {
     clampZoom: { minWidth: width / sc, maxWidth: width * sc, minHeight: height / sc, maxHeight: height * sc }
   };
   vp.drag({ wheel: false }).wheel({ percent: 1e-3, interrupt: true }).clampZoom(vp_params.clampZoom).decelerate();
-  const resize = enable_resize(app, vp);
+  const resize = enable_resize(app2, vp);
   window.addEventListener("resize", resize);
   view.onwheel = function(event) {
     event.preventDefault();
@@ -44679,34 +44740,65 @@ async function start_pixi(width = 200, height = 200) {
   view.onmousewheel = function(event) {
     event.preventDefault();
   };
-  return [app, vp];
+  return [app2, vp];
+}
+async function initialize({ model: model2 }) {
+  console.log("--- Initializing widget ---");
+  const [app2, vp] = await new_pixi(model2.get("width"), model2.get("height"));
+  this.app = app2;
+  this.vp = vp;
 }
 async function render({ model: model2, el }) {
-  const [app, vp] = await start_pixi(250, 250);
-  el.appendChild(app.canvas);
+  console.log("this: ");
+  console.log(this);
+  const WIDTH = this.app.canvas.clientWidth;
+  const HEIGHT = this.app.canvas.clientHeight;
+  console.log("model: ");
+  console.log(model2);
+  el.appendChild(this.app.canvas);
+  this.app.stage.addChild(this.vp);
   console.log("Canvas view: ");
-  console.log(app.canvas);
+  console.log(this.app.canvas);
   console.log("Widget element: ");
   console.log(el);
   console.log("pixiplex app: ");
   console.log(pixinet_exports);
   console.log("viewport: ");
-  console.log(vp);
-  var graph = {
-    "nodes": [
-      { "id": "Myriel", "group": 1 },
-      { "id": "Napoleon", "group": 1 },
-      { "id": "Mlle.Baptistine", "group": 1 },
-      { "id": "Mme.Magloire", "group": 1 },
-      { "id": "CountessdeLo", "group": 1 },
-      { "id": "Geborand", "group": 1 }
-    ]
-  };
-  var nodes = generate_node_graphics(graph.nodes);
-  app.stage.addChild(vp);
-  stage_items(vp, nodes);
+  console.log(this.vp);
+  model2.on("msg:custom", (msg) => {
+    console.log("Custom msg called");
+    console.log(msg);
+    if (msg.type == "msg:init_nodes") {
+      console.log("initializing nodes");
+      model2.nodes = model2.get("node_ids").map((node_id) => {
+        return { "id": node_id };
+      });
+      scale_nodes(model2.nodes, WIDTH, HEIGHT);
+      nodes_gfx = generate_node_graphics(model2.nodes);
+      console.log(nodes_gfx);
+    } else if (msg.type == "msg:init_links") {
+      links_gfx = generate_links_graphic();
+      console.log(links_gfx);
+      resolve_links(nodes_gfx, links);
+      console.log("links: ");
+      console.log(links);
+      draw_links(links, links_gfx);
+    } else if (msg.type == "msg:init_force") {
+      model2.sim = force_sim();
+      model2.sim.stop();
+      model2.sim.alpha(1);
+      dispatcher.on("tick", function() {
+        sim.tick();
+      });
+    } else if (msg.type == "msg:enable_force") {
+      default_force_settings(sim, app, nodes_gfx, links);
+      nodes_gfx.forEach((node) => {
+        compose(pixi_drag(node), force_drag(sim))(drag_dispatcher(node));
+      });
+    }
+  });
 }
-var widget_default = { render };
+var widget_default = { initialize, render };
 export {
   widget_default as default
 };

@@ -9,6 +9,7 @@ body
 	button(id="lasso_button" type="button") Do Lasso
 	button(id="center_button" type="button") Center
 	button(id="enable_force_button" type="button") Enable force
+	button(id="disable_force_button" type="button") Disable forces
 	button(id="insert_node_button" type="button") Insert node
 	button(id="remove_node_button" type="button") Remove node
 	button(id="insert_link_button" type="button") Insert link
@@ -50,26 +51,33 @@ script(type="module").
 	pixir_container.style.margin = '5px';
 	// Example application
 	
+	const pp = new pn.Pixiplex()
+	pp.initialize()
+
 	var view = document.createElement('canvas');
 	view.style.width = width + 'px'
 	view.style.height = height + 'px'
 	//- pn.set_dpi(view, 288);
 
 	const app = new pn.Application();
-
+	
 	// Initialize application
 	await app.init({
 		canvas: view,
 		antialias: true, 
 		backgroundColor: 0xffffff, 
-		resolution: devicePixelRatio, 
+		resolution: 1.2*devicePixelRatio, 
+		//- resolution: 1.0,
+		sharedTicker: true, 
+		transparent: false,
 		autoResize: true, 
-		forceCanvas: true,
+		forceCanvas: false, // NOTE: this can force CPU? 
 		autoStart: false // <- note the animation updates won't be immediate! 
 	});
 	console.log(app);
 	document.getElementById("pixir_container").appendChild(view);
 	view.onwheel = function(event){ event.preventDefault(); };
+	view.onmousewheel = function(event){ event.preventDefault(); };
 
 	// Create a viewport to handle panning, dragging, etc.
 	// for pixi v8, see: https://github.com/davidfig/pixi-viewport/issues/488
@@ -92,6 +100,7 @@ script(type="module").
 	var sim = null, sim_params = null; // the force simulation + parameters
 	
 	const [ticker, dispatcher] = pn.register_ticker(app, vp); // the (pixi) simulation ticker
+	//- sharedTicker
 
 	console.log("Ticker");
 	console.log(ticker);
@@ -99,9 +108,9 @@ script(type="module").
 	
 	// The default drawing method to update on each tick. Draw polygons, then links. Nodes are automatically updated.
 	const default_draw = () => {
-		if (polygons) { pn.draw_polygons(polygons); }
+		//- if (polygons) { pn.draw_polygons(polygons); }
 		if (links) { links_gfx.clear(); pn.draw_links(links, links_gfx); }
-		if (sim){ sim.tick(); }
+		//- if (sim){ sim.tick(); }
 	}
 
 	d3.json("data/les_miserables.json").then(function(graph) {
@@ -122,28 +131,97 @@ script(type="module").
 		// Register the dragging callbacks for the nodes
 		nodes_gfx.forEach((node) => {
 			//- pn.pixi_drag(node);
-			//- pn.compose(pn.pixi_drag(node))(pn.drag_dispatcher(node));
+			pn.compose(pn.pixi_drag(node))(pn.drag_dispatcher(node));
 		});
 
 		// Assign actual source and target node references
 		pn.resolve_links(nodes_gfx, links);
+		//- pn.resolve_links_index(nodes_gfx, links);
+		console.log("links: ")
+		console.log(links)
+		pn.draw_links(links, links_gfx);
 
 		// Add the graphics to the viewport
 		pn.stage_items(vp, [links_gfx]); // add links to stage
 		pn.stage_items(vp, nodes_gfx); 	 // add nodes to stage
 
+
+		//- const N_LINES = links.length;
+		//- const SOURCE_IDS = new Int32Array(links.map((link) => { return link.source }));
+		//- const TARGET_IDS = new Int32Array(links.map((link) => { return link.target }));
+		//- console.log(SOURCE_IDS);
+		ticker.add((ticker) =>{
+			//- console.log("drawing edges");
+			//- default_draw();
+			//- links_gfx.clear(); 
+			// Somehow this is really what causes the CPU spike, unknown how to fix
+			//- for (let i = 0; i < N_LINES; i++){
+			//- 	//- links_gfx
+			//- 	//- 	.moveTo(nodes_gfx[links[i].source].x, nodes_gfx[links[i].source].y)
+			//- 	//- 	.lineTo(nodes_gfx[links[i].target].x, nodes_gfx[links[i].target].y)	
+			//- 	links_gfx
+			//- 		.moveTo(nodes_gfx[SOURCE_IDS[i]].x, nodes_gfx[SOURCE_IDS[i]].y)
+			//- 		.lineTo(nodes_gfx[TARGET_IDS[i]].x, nodes_gfx[TARGET_IDS[i]].y)	
+			//- }
+			//- links.forEach((link) => {
+			//- 	const { source, target } = link;
+			//- 	links_gfx
+			//- 		.moveTo(source.x, source.y)
+			//- 		.lineTo(target.x, target.y)	
+			//- 		//- .stroke({ width: 1, color: 0x000000 });
+			//- });
+			//- links_gfx.stroke({ width: 1, color: 0x000000 });
+			//- links_gfx.save()
+			links_gfx.clear(); 
+			pn.draw_links(links, links_gfx);
+			//- let new_ls = merge(line_style, ls);
+			//- link_gfx.clear();
+			//- const { source, target } = link;
+			//- link_gfx
+			//- 	.moveTo(source.x, source.y)
+			//- 	.lineTo(target.x, target.y)
+			//- 	.stroke({ width: ls.lineWidth, color: ls.color });
+			//- return(link)
+		});
+
 		// Initiate the animation
-		dispatcher.on('tick', default_draw);
+		//- dispatcher.on('tick', default_draw);
+		//- app.stage.cacheAsTexture(true);
+
 		ticker.start();
 		//- ticker.call('animate'); // start 
 	});
 
+	
+	document.getElementById("enable_force_button").addEventListener("click", function(){
+		// Create the force simulation 
+		sim = pn.force_sim();
+		sim_params = pn.default_force_settings();
+		pn.default_force_settings(sim, app, nodes_gfx, links);
 
+		// Add force dragging emitter callbacks
+		nodes_gfx.forEach((node) => {
+			pn.compose(pn.pixi_drag(node), pn.force_drag(sim))(pn.drag_dispatcher(node));
+		});
+		sim.stop();
+		sim.alpha(1); // no restart needed
+		
+		// Add d3-force steps to the PIXI ticker 
+		//- ticker.add((ticker) => {
+		//- 	sim.tick();
+		//- })
+		dispatcher.on("tick", function(){ sim.tick(); })
+	});
 
+	document.getElementById("center_button").addEventListener("click", function(){
+		vp.moveCenter(width/2, height/2);
+		console.log(nodes);
+	});
 
-
-
-	//- });
+	document.getElementById("disable_force_button").addEventListener("click", function(){
+		//- dispatcher.on("tick", null);
+		console.log(ticker)
+	});
 
 	//- // Start lasso on double-click 
 	//- let lasso_obj = pn.enable_lasso("pixir_container");
@@ -167,18 +245,7 @@ script(type="module").
 	//- 		// Drag -- or -- do something else w/ selected nodes 
 	//- 		// unhighlight nodes when finished  
 	//- });
-	//- document.getElementById("enable_force_button").addEventListener("click", function(){
-	//- 	// Create the force simulation 
-	//- 	sim = pn.enable_force();
-	//- 	sim_params = pn.default_force_settings();
-	//- 	pn.default_force_settings(sim, app, nodes, links);
 
-	//- 	// Add force dragging emitter callbacks
-	//- 	nodes.forEach((node) => {
-	//- 		pn.compose(pn.pixi_drag(node), pn.force_drag(sim))(pn.drag_dispatcher(node));
-	//- 	});
-	//- 	sim.alpha(1); // no restart needed
-	//- });
 
 	//- document.getElementById("lasso_button").addEventListener("click", function(){
 	//- 	console.log("lasso clicked")
@@ -188,10 +255,7 @@ script(type="module").
 	//- 	// var interact_svg = pn.enable_lasso("pixir_container");
 	//- 	// var selected_nodes = pn.start_lasso(nodes, interact_svg);
 	//- });
-	//- document.getElementById("center_button").addEventListener("click", function(){
-	//- 	vp.moveCenter(width/2, height/2);
-	//- 	console.log(nodes);
-	//- });
+
 	//- document.getElementById("insert_node_button").addEventListener("click", function(){
 	//- 	console.log("inserting new node");
 	//- 	let new_nodes = [{id: "new_node", group: 5, x: 0.5, y: 0.5}]; 

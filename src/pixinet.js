@@ -2,14 +2,14 @@
 // Contains utilities for making PIXI-driven force-directed network 
 
 // import * as PIXI from 'pixi.js';
-import { Application, Graphics, Polygon, Text, Container } from 'pixi.js'
+import { Application, Graphics, Polygon, Text, Container, Ticker, GraphicsContext } from 'pixi.js'
 import { Viewport } from 'pixi-viewport';
 import { selection, select } from 'd3-selection';
 import { scaleLinear } from 'd3-scale';
 import { polygonContains } from 'd3-polygon';
 import lasso from './lasso.js';
 import { dispatch } from 'd3-dispatch';
-import { forOwn, map, remove, concat, filter, unionBy, pullAllBy, pullAllWith, intersectionWith, unionWith, differenceBy, differenceWith, transform, includes, isFunction, isEmpty, merge, flatMap } from 'lodash-es';
+import { assign, forOwn, map, remove, concat, filter, unionBy, pullAllBy, pullAllWith, intersectionWith, unionWith, differenceBy, differenceWith, transform, includes, isFunction, isEmpty, merge, flatMap } from 'lodash-es';
 import { forceCenter, forceCollide, forceLink, forceManyBody, forceRadial, forceSimulation, forceX, forceY } from 'd3-force';
 import * as d3_force from 'd3-force';
 // import * as EventEmitter from 'eventemitter3';
@@ -149,16 +149,21 @@ export const register_ticker = (app, stage) => {
 	
 	// The main animation loop: if not stopped, requests the next animation frame, renders the children in the stage, 
 	// and then dispatches a 'tick' callback to the D3 registered dispatcher
-	let ticker = app.ticker;
+	// let ticker = app.ticker;
+	const ticker = Ticker.shared;
 	ticker.autoStart = false;
 	ticker.stop();
 	ticker.maxFPS = 30; // TODO: make configurable
-	function animate(time){
-		ticker.update(time);
-		app.renderer.render(stage);
-		if (!end_loop) { requestAnimationFrame(animate); }
+	ticker.add((ticker) => {
 		dispatcher.call("tick", this);
-	}
+	})
+	// function animate(time){
+	// 	ticker.update(time);
+	// 	app.renderer.render(stage);
+	// 	if (!end_loop) { requestAnimationFrame(animate); }
+	// 	dispatcher.call("tick", this);
+	// 	// console.log(time)
+	// }
 	// dispatcher.on('animate', animate);
 	
 	// Optional minor dispatch that stops the animation frame requests
@@ -186,9 +191,12 @@ export const clear_stage = (stage) => {
 // Create viewport
 export const create_viewport = (app, sw, sh, ww=sw, wh=sh) => {
 	var viewport = new Viewport({
-		screenWidth: sw, screenHeight: sh,
-		worldWidth: ww, worldHeight: wh,
-		events: app.renderer.events  // this changed; app must be initialized
+		screenWidth: sw, 
+		screenHeight: sh,
+		worldWidth: ww, 
+		worldHeight: wh,
+		events: app.renderer.events,  // this changed; app must be initialized
+		// stopPropagation: true, 
 	});
 	return(viewport);
 }
@@ -249,8 +257,15 @@ export const draw_nodes = (nodes, ns = node_style) => {
 		// console.log(merge(default_ns(nodes[0]), ns[0]))
 		nodes.forEach((node, i) => { draw_node(node, merge(default_ns(node), ns[i])) })
 	} else if (ns.constructor == Object){
-		let ns_new = merge(default_ns(node), ns);
-		nodes.forEach((node) => { draw_node(node, ns_new) })
+		// https://pixijs.com/8.x/guides/components/graphics#the-graphicscontext
+		// let ns_new = merge(default_ns(node), ns);
+		// let ns_context = new GraphicsContext()
+		// 	.circle(0, 0, ns_new.radius)
+		// 	.stroke({ width: ns_new.lineStyle.size, color: ns_new.lineStyle.color })
+		// 	.fill({ color: ns_new.color, alpha: ns_new.alpha})
+		// ;
+		// nodes.forEach((node) => { node.clear(); node.context = ns_context; });
+		// nodes.forEach((node) => { draw_node(node, ns_new) })
 	}
 }
 
@@ -278,8 +293,13 @@ export const draw_links = (links, link_gfx, ls = line_style) => {
 		let new_ls = merge(line_style, ls);
 		link_gfx.clear();
 		links.forEach((link) => { 
-			draw_link(link, link_gfx, new_ls);
+			const { source, target } = link;
+			link_gfx
+				.moveTo(source.x, source.y)
+				.lineTo(target.x, target.y)
+				// .stroke({ width: ls.lineWidth, color: ls.color })
 		});
+		link_gfx.stroke({ width: new_ls.lineWidth, color: new_ls.color });
 	}
 }
 
@@ -445,7 +465,7 @@ export const make_group = (nodes) => {
 }
 
 // Creates a new d3 force simulation 
-export const enable_force = () => { return forceSimulation() }
+export const force_sim = () => { return forceSimulation() }
 
 // https://stackoverflow.com/questions/14488849/higher-dpi-graphics-with-html5-canvas
 export const set_dpi = (canvas, dpi) => {
@@ -513,6 +533,13 @@ export const resolve_links = (nodes, links) => {
 		if (!(link.target instanceof Graphics)){
 			link.target = nodes.find((node) => { return node.id == link.target });
 		}
+	});
+}
+
+export const resolve_links_index = (nodes, links) => {
+	links.forEach((link) => {
+		link.source = nodes.findIndex((node) => { return node.id == link.source });
+		link.target = nodes.findIndex((node) => { return node.id == link.target });
 	});
 }
 
@@ -599,6 +626,45 @@ export const group_items = (items, acc = identity) => {
 	return group;
 }
 
+class Pixiplex {
+	constructor(width = 250, height = 250){
+		this.width = width
+		this.height = height
+		this.nodes = null
+		this.links = null
+		this.polygons = null
+		this.nodes_gfx = null
+		this.links_gfx = null
+		this.polygons_gfx = null;
+		this.sim = null
+		this.sim_params = null // the force simulation + parameters
+	}
+	
+	// Should be called one
+	initialize(options){
+		this.view = document.createElement('canvas');
+		this.view.style.width = this.width + 'px'
+		this.view.style.height = this.height + 'px'
+		//- pn.set_dpi(view, 288);
+		this.app = new Application();
+		let app_params = {
+			canvas: this.view,
+			antialias: true, 
+			backgroundColor: 0xffffff, 
+			resolution: 1.2*devicePixelRatio, 
+			//- resolution: 1.0,
+			sharedTicker: true, 
+			transparent: false,
+			autoResize: true, 
+			forceCanvas: false, // NOTE: this can force CPU? 
+			autoStart: false // <- note the animation updates won't be immediate! 
+		}
+		this.app.init(assign(app_params, options));
+	}
+}
+
+
 export { select }
 export { map, forOwn, remove, concat, filter, unionBy, unionWith, pullAllBy, pullAllWith, intersectionWith, differenceBy, differenceWith, transform, includes, isEmpty, merge, flatMap}
-export { Application, Graphics, Polygon, Text }
+export { Application, Graphics, Polygon, Text, Ticker, Container }
+export { Pixiplex }

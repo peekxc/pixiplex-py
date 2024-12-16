@@ -1,0 +1,24 @@
+{
+	"scripts": {
+		"dev": "npm run build -- --sourcemap=inline --watch",
+		"pug": "npx pug src/index.pug --out pixiplex/static",
+		"bundle": "npx esbuild --bundle --format=esm --outdir=pixiplex/static src/widget.js src/pixinet.js",
+		"serve": "npx esbuild src/widget.js --bundle --servedir=pixiplex/static --outdir=pixiplex/static"
+	},
+	"dependencies": {
+		"@pixi/events": "^7.4.2",
+		"d3": "^7.9.0",
+		"d3-dispatch": "^3.0.1",
+		"d3-force": "^3.0.0",
+		"d3-polygon": "^3.0.1",
+		"d3-scale": "^4.0.2",
+		"d3-selection": "^3.0.0",
+		"lodash-es": "^4.17.21",
+		"pixi-viewport": "^5.0.3",
+		"pixi.js": "^8.3.4",
+		"pug": "^3.0.3",
+		"pug-cli": "^1.0.0-alpha6"
+	},
+	"devDependencies": {},
+	"type": "module"
+}

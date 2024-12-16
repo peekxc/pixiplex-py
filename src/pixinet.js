@@ -12,7 +12,7 @@ import { dispatch } from 'd3-dispatch';
 import { forOwn, map, remove, concat, filter, unionBy, pullAllBy, pullAllWith, intersectionWith, unionWith, differenceBy, differenceWith, transform, includes, isFunction, isEmpty, merge, flatMap } from 'lodash-es';
 import { forceCenter, forceCollide, forceLink, forceManyBody, forceRadial, forceSimulation, forceX, forceY } from 'd3-force';
 import * as d3_force from 'd3-force';
-import * as EventEmitter from 'eventemitter3';
+// import * as EventEmitter from 'eventemitter3';
 
 export const combinations = (n, k) => {
   const result= [];
@@ -71,6 +71,8 @@ const default_sim_params = {
 	  center: { enabled: true, type: "forceCenter", params: default_center_params }
 	}
 };
+
+// Given a node, export its node style
 export const current_ns = (node) => {
 	let gd = node.graphicsData[0]
 	let c_ns = { 
@@ -94,6 +96,7 @@ export const default_ns = (node) => {
 	return res;
 }
 
+// Remove unused keys
 export const clean = (obj) => {
   Object.keys(obj).forEach((key) => (obj[key] == null) && delete obj[key]);
   return obj;
@@ -110,7 +113,7 @@ export const apply_sim = (sim, params) => {
 	return sim
 }
 
-// Applies force settings a d3 force simulation
+// Meta-function for applying force settings on a d3 force simulation object
 export const apply_force = (sim, params) => {
 	forOwn(params, function(settings, forcename){
 		if (settings.enabled){
@@ -382,8 +385,12 @@ export const force_drag = (sim) => {
 
 // ---- PIXI Application stuff ----
 
-// Stage all items in 'arr' to 'stage'. Access elements w/ 'accessor'
-// should only be called once, not on tick
+// The stage is simply a Container that is the root of the scene graph. 
+// Every child of the stage container will be rendered every frame. 
+// By adding our sprite to the stage, we tell PixiJS's renderer we want to draw it.
+
+// Adds all items in 'arr' to 'stage'. 
+// Accesses elements w/ 'accessor' once before adding (not on tick)
 export const stage_items = (stage, arr, acc = identity) => { 
 	arr.forEach((item) => { stage.addChild(acc(item)) }); 
 }

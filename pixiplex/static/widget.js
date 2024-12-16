@@ -44178,7 +44178,6 @@ var unionWith = baseRest_default(function(arrays) {
 var unionWith_default = unionWith;
 
 // src/pixinet.js
-init_eventemitter3();
 var combinations = (n2, k3) => {
   const result = [];
   const combos = [];

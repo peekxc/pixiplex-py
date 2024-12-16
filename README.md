@@ -1,10 +1,6 @@
 # pixiplex_py
 
-## Installation
-
-```sh
-pip install pixiplex
-```
+> CAUTION: Experimental library being developed for fun. Do not use. 
 
 ## Development 
 
@@ -18,7 +14,7 @@ Use Jupyter lab w/ DevTools.
 jupyter lab 
 ```
 
-Point the source of the jupyter widget to the `pixiplex/static/*` files, *NOT* the src files. Compile with: 
+Point the source of the jupyter widget to the `pixiplex/static/*` files, *NOT* the src files. Then compile with: 
 
 ```bash
 npx esbuild --bundle --format=esm --outdir=pixiplex/static src/widget.js src/pixinet.js --watch

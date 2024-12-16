@@ -5084,12 +5084,12 @@ var init_TickerListener = __esm({
        * @param ticker - The ticker emitting.
        * @returns Next ticker
        */
-      emit(ticker2) {
+      emit(ticker) {
         if (this._fn) {
           if (this._context) {
-            this._fn.call(this._context, ticker2);
+            this._fn.call(this._context, ticker);
           } else {
-            this._fn(ticker2);
+            this._fn(ticker);
           }
         }
         const redirect = this.next;
@@ -5515,13 +5515,13 @@ var init_TickerPlugin = __esm({
           this,
           "ticker",
           {
-            set(ticker2) {
+            set(ticker) {
               if (this._ticker) {
                 this._ticker.remove(this.render, this);
               }
-              this._ticker = ticker2;
-              if (ticker2) {
-                ticker2.add(this.render, this, UPDATE_PRIORITY.LOW);
+              this._ticker = ticker;
+              if (ticker) {
+                ticker.add(this.render, this, UPDATE_PRIORITY.LOW);
               }
             },
             get() {
@@ -5650,8 +5650,8 @@ var init_EventTicker = __esm({
        * Invoked by a throttled ticker update from {@link Ticker.system}.
        * @param ticker - The throttled ticker.
        */
-      _tickerUpdate(ticker2) {
-        this._deltaTime += ticker2.deltaTime;
+      _tickerUpdate(ticker) {
+        this._deltaTime += ticker.deltaTime;
         if (this._deltaTime < this.interactionFrequency) {
           return;
         }
@@ -35131,6 +35131,7 @@ __export(pixinet_exports, {
   pullAllWith: () => pullAllWith_default,
   range: () => range,
   register_tick_stops: () => register_tick_stops,
+  register_ticker: () => register_ticker,
   remove: () => remove_default4,
   remove_nodes: () => remove_nodes,
   resolve_links: () => resolve_links,
@@ -35138,7 +35139,6 @@ __export(pixinet_exports, {
   select: () => select_default2,
   set_dpi: () => set_dpi,
   stage_items: () => stage_items,
-  ticker: () => ticker,
   transform: () => transform_default,
   unionBy: () => unionBy_default,
   unionWith: () => unionWith_default,
@@ -44321,26 +44321,31 @@ var scale_nodes = (nodes, w2, h2) => {
   });
   return nodes;
 };
-var ticker = (app, stage) => {
+var register_ticker = (app, stage) => {
   let dispatcher = dispatch_default2("tick", "animate", "stop", "restart");
   let end_loop = false;
-  function animate() {
+  let ticker = app.ticker;
+  ticker.autoStart = false;
+  ticker.stop();
+  ticker.maxFPS = 30;
+  function animate(time) {
+    ticker.update(time);
+    app.renderer.render(stage);
     if (!end_loop) {
       requestAnimationFrame(animate);
     }
-    app.renderer.render(stage);
     dispatcher.call("tick", this);
   }
-  dispatcher.on("animate", animate);
   dispatcher.on("stop", function() {
     end_loop = true;
+    ticker.stop();
     console.log("ticker stopped");
   });
   dispatcher.on("restart", function() {
     end_loop = false;
-    dispatcher.call("animate");
+    ticker.start();
   });
-  return dispatcher;
+  return [ticker, dispatcher];
 };
 var clear_stage = (stage) => {
   for (var i2 = stage.children.length - 1; i2 >= 0; i2--) {
@@ -44467,7 +44472,6 @@ var drag_dispatcher = (node2) => {
   });
   node2.on("pointermove", function(e3) {
     if (this.dragging) {
-      console.log("Dragging");
       let coords = this.data.getLocalPosition(this.parent);
       dsp.call("dragging", node2, e3, coords);
     }

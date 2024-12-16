@@ -140,24 +140,41 @@ export const scale_nodes = (nodes, w, h) => {
 	return nodes;
 }
 
-export const ticker = (app, stage) => {
+// Creates a D3-dispatcher that 
+export const register_ticker = (app, stage) => {
+	
+	// D3 dispatcher
 	let dispatcher = dispatch("tick", "animate", "stop", "restart");
 	let end_loop = false; 
-	function animate(){
-		if (!end_loop) { requestAnimationFrame(animate); }
+	
+	// The main animation loop: if not stopped, requests the next animation frame, renders the children in the stage, 
+	// and then dispatches a 'tick' callback to the D3 registered dispatcher
+	let ticker = app.ticker;
+	ticker.autoStart = false;
+	ticker.stop();
+	ticker.maxFPS = 30; // TODO: make configurable
+	function animate(time){
+		ticker.update(time);
 		app.renderer.render(stage);
+		if (!end_loop) { requestAnimationFrame(animate); }
 		dispatcher.call("tick", this);
 	}
-	dispatcher.on('animate', animate);
+	// dispatcher.on('animate', animate);
+	
+	// Optional minor dispatch that stops the animation frame requests
 	dispatcher.on('stop', function(){ 
 		end_loop = true; 
+		ticker.stop();
 		console.log('ticker stopped'); 
 	});
+
+	// Optional minor dispatch that restarts the animation frame requests
 	dispatcher.on('restart', function(){ 
 		end_loop = false; 
-		dispatcher.call('animate');
+		// dispatcher.call('animate');
+		ticker.start();
 	});
-	return(dispatcher);
+	return [ticker, dispatcher];
 }
 
 export const clear_stage = (stage) => {
@@ -309,13 +326,12 @@ export const drag_dispatcher = (node) => {
 	let dsp = dispatch("start", "end", "dragging");
 	node.on('pointerdown', function(e){ 
 		// console.log("Drag dispatch pointerdown");
-
 		dsp.call('start', node, e) 
 	});
 	node.on('pointerup', function(e){ dsp.call('end', node, e) });
 	node.on('pointermove', function(e){
 		if (this.dragging){
-			console.log("Dragging");
+			// console.log("Dragging");
 			let coords = this.data.getLocalPosition(this.parent);
 			dsp.call('dragging', node, e, coords);
 		}
@@ -488,7 +504,7 @@ export const enable_resize = (app, vp = null) => {
 	return(_resize);
 }
 
-// Resolves link source and target nodes
+// Resolves link source and target nodes, replacing .source and .target integer ids with node graphics
 export const resolve_links = (nodes, links) => {
 	links.forEach((link) => {
 		if (!(link.source instanceof Graphics)){

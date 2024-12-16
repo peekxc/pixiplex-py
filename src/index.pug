@@ -79,16 +79,22 @@ script(type="module").
 	}
 	// Clam gets rid of panning !.clamp({ direction: 'all'})
 	vp.drag().wheel(1e-3).clampZoom(vp_params.clampZoom).decelerate();		
-	
+	app.stage.addChild(vp);
+
 	// Enable dynamic resizing
 	const resize = pn.enable_resize(app, vp);
 	window.addEventListener('resize', resize); 	// Listen for window resize events
 	resize();
 
 	// The rest of the global variables needed to be tracked
-	var nodes = null, links = null, links_gfx = null, polygons = null; 
+	var nodes = null, links = null, polygons = null; 
+	var nodes_gfx = null, links_gfx = null, polygons_gfx = null;
 	var sim = null, sim_params = null; // the force simulation + parameters
-	const ticker = pn.ticker(app, vp); // the (pixi) simulation ticker
+	
+	const [ticker, dispatcher] = pn.register_ticker(app, vp); // the (pixi) simulation ticker
+
+	console.log("Ticker");
+	console.log(ticker);
 	// pn.register_tick_stops(ticker, vp);
 	
 	// The default drawing method to update on each tick. Draw polygons, then links. Nodes are automatically updated.
@@ -99,33 +105,44 @@ script(type="module").
 	}
 
 	d3.json("data/les_miserables.json").then(function(graph) {
-		
+
+		// Show the graph 
+		console.log(graph)
+
 		// Generate link graphics first?
 		links_gfx = pn.generate_links_graphic();
+		links = graph.links; 
 		console.log(links_gfx);
 
 		// Create node graphics, then stage them
 		pn.scale_nodes(graph.nodes, width, height); // this must happen before the node graphics are generated
-		nodes = pn.generate_node_graphics(graph.nodes);
-		links = graph.links; 
+		nodes_gfx = pn.generate_node_graphics(graph.nodes);
+		console.log(nodes_gfx)
 	
+		// Register the dragging callbacks for the nodes
+		nodes_gfx.forEach((node) => {
+			//- pn.pixi_drag(node);
+			//- pn.compose(pn.pixi_drag(node))(pn.drag_dispatcher(node));
+		});
+
+		// Assign actual source and target node references
+		pn.resolve_links(nodes_gfx, links);
+
+		// Add the graphics to the viewport
+		pn.stage_items(vp, [links_gfx]); // add links to stage
+		pn.stage_items(vp, nodes_gfx); 	 // add nodes to stage
+
+		// Initiate the animation
+		dispatcher.on('tick', default_draw);
+		ticker.start();
+		//- ticker.call('animate'); // start 
 	});
-	//- 	// Register the dragging callbacks for the nodes
-	//- 	nodes.forEach((node) => {
-	//- 		pn.compose(pn.pixi_drag(node))(pn.drag_dispatcher(node));
-	//- 	});
 
-	//- 	// Assign actual source and target node references
-	//- 	pn.resolve_links(nodes, links);
 
-	//- 	// Add the graphics to the viewport
-	//- 	app.stage.addChild(vp);
-	//- 	pn.stage_items(vp, [links_gfx]); // add links to stage
-	//- 	pn.stage_items(vp, nodes); 			// add nodes to stage
 
-	//- 	// Setup ticker
-	//- 	ticker.on('tick', default_draw);
-	//- 	ticker.call('animate'); // start 
+
+
+
 	//- });
 
 	//- // Start lasso on double-click 

@@ -14,8 +14,8 @@
 		"d3-scale": "^4.0.2",
 		"d3-selection": "^3.0.0",
 		"lodash-es": "^4.17.21",
-		"pixi-viewport": "^5.0.3",
-		"pixi.js": "^8.3.4",
+		"pixi-viewport": "^6.0.3",
+		"pixi.js": "^8.6.6",
 		"pug": "^3.0.3",
 		"pug-cli": "^1.0.0-alpha6"
 	},

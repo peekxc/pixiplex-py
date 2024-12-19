@@ -1,0 +1,29 @@
+<!DOCTYPE html><head><meta charset="utf-8"><title>d3 webGL force graph with PIXI.js</title><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><meta name="description" content=""><meta name="theme-color" content="#000000"></head><body><script type="module">import * as pn from "./pixinet.js"
+
+const app = await new pn.Application();
+await app.init({ 
+	background: 0xededed, 
+	resizeTo: window, 
+	autoStart: false,
+	transparent: false, 
+	resolution: devicePixelRatio, 
+	antialias: true, 
+	forceCanvas: false,
+});
+document.body.appendChild(app.canvas);
+
+// Construct some random nodes
+let node_context = new pn.GraphicsContext()
+	.circle(0, 0, 6)
+	.stroke({ width: 1.5, color: 0xFFFFFF })
+	.fill({ color: 0x650A5A });
+
+// Add the nodes to the stage
+for (let i = 0; i < 300; i++){
+	let node = new pn.Graphics(node_context);
+	node.x = Math.random() * app.renderer.width; 
+	node.y = Math.random() * app.renderer.height; 
+	app.stage.addChild(node);
+}
+app.start();
+console.log(app)</script></body>

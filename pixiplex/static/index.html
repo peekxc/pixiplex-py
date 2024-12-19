@@ -1,115 +1,94 @@
-<!DOCTYPE html><head><meta charset="utf-8"><title>d3 webGL force graph with PIXI.js</title><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><meta name="description" content=""><meta name="theme-color" content="#000000"></head><body><button id="lasso_button" type="button">Do Lasso</button><button id="center_button" type="button">Center</button><button id="enable_force_button" type="button">Enable force</button><button id="disable_force_button" type="button">Disable forces</button><button id="insert_node_button" type="button">Insert node</button><button id="remove_node_button" type="button">Remove node</button><button id="insert_link_button" type="button">Insert link</button><button id="remove_link_button" type="button">Remove link</button><button id="insert_polygon_button" type="button">Insert polygon</button><button id="remove_polygon_button" type="button">Remove polygon</button><button id="change_node_color_button" type="button">Change node color</button><button id="change_node_colors_button" type="button">Change node colors</button><button id="change_node_radius_button" type="button">Change node radius</button><button id="change_node_size" type="button">Change color</button><button id="change_link_width" type="button">Change link width</button><button id="change_link_color" type="button">Change link color</button><button id="enable_weak_tree" type="button">Enable weak tree</button><button id="remove_forces" type="button">Remove forces</button><button id="add_text" type="button">Add Text </button><div id="pixir_container" style="position: relative; overflow: hidden; overflow-y: hidden; padding: 0; margin: 0; width: 1200px; height: 800px;"></div></body><script src="https://d3js.org/d3-fetch.v1.min.js"></script><script src="https://d3js.org/d3-color.v1.min.js"></script><script src="https://d3js.org/d3-interpolate.v1.min.js"></script><script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.11/lodash.core.js"></script><script type="module">import * as pn from "./pixinet.js"
+<!DOCTYPE html><head><meta charset="utf-8"><title>d3 webGL force graph with PIXI.js</title><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><meta name="description" content=""><meta name="theme-color" content="#000000"></head><body><button id="center_button" type="button">Center</button><div> <button id="enable_force_button" type="button">Enable force</button><button id="disable_force_button" type="button">Disable forces</button></div><div> <button id="enable_drag_button" type="button">Enable drag</button><button id="disable_drag_button" type="button">Disable drag</button></div><div> <button id="change_node_color_button" type="button">Change node color</button><button id="change_node_colors_button" type="button">Change node colors</button><button id="change_node_radius_button" type="button">Change node radius</button><button id="change_node_size" type="button">Change node size</button><button id="change_link_width" type="button">Change link width</button><button id="change_link_color" type="button">Change link color</button></div><div> <button id="insert_node_button" type="button">Insert node</button><button id="remove_node_button" type="button">Remove node</button><button id="insert_link_button" type="button">Insert link</button><button id="remove_link_button" type="button">Remove link</button><button id="insert_polygon_button" type="button">Insert polygon</button><button id="remove_polygon_button" type="button">Remove polygon</button><button id="add_text" type="button">Add node text </button></div><div> <button id="lasso_button" type="button">Do Lasso</button><button id="enable_weak_tree" type="button">Enable weak tree</button></div><div id="pixir_container" style="position: relative; overflow: hidden; overflow-y: hidden; padding: 0; margin: 0; width: 1200px; height: 800px;"></div></body><script src="https://d3js.org/d3-fetch.v1.min.js"></script><script src="https://d3js.org/d3-color.v1.min.js"></script><script src="https://d3js.org/d3-interpolate.v1.min.js"></script><script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.11/lodash.core.js"></script><script type="module">import * as pn from "./pixinet.js"
 console.log(pn)
 console.log("Pixel ratio: " + devicePixelRatio)
+
+// Setup bordered container to house the canvas for debugging
 const pn_cont = pn.select("#pixir_container").attr('display', 'inline');
-// const width = pn_cont.style('width'), height = pn_cont.style('height');
 var pixir_container = document.getElementById("pixir_container")
 const width = pixir_container.clientWidth;
 const height = pixir_container.clientHeight;
 pixir_container.style.border = '1px solid black';
 pixir_container.style.margin = '5px';
-// Example application
 
-const pp = new pn.Pixiplex()
-pp.initialize()
+// Construct the instance 
+const pp = new pn.Pixiplex(width, height);
 
-var view = document.createElement('canvas');
-view.style.width = width + 'px'
-view.style.height = height + 'px'
-//- pn.set_dpi(view, 288);
-
-const app = new pn.Application();
-
-// Initialize application
-await app.init({
-	canvas: view,
-	antialias: true, 
-	backgroundColor: 0xffffff, 
-	resolution: 1.2*devicePixelRatio, 
-	//- resolution: 1.0,
-	sharedTicker: true, 
-	transparent: false,
-	autoResize: true, 
-	forceCanvas: false, // NOTE: this can force CPU? 
-	autoStart: false // <- note the animation updates won't be immediate! 
-});
-console.log(app);
-document.getElementById("pixir_container").appendChild(view);
-view.onwheel = function(event){ event.preventDefault(); };
-view.onmousewheel = function(event){ event.preventDefault(); };
-
-// Create a viewport to handle panning, dragging, etc.
-// for pixi v8, see: https://github.com/davidfig/pixi-viewport/issues/488
-var vp = pn.create_viewport(app, width, height);
-var vp_params = {
-	clampZoom: { minWidth: width/5, maxWidth: width*5, minHeight: height/5, maxHeight: height*5 }
-}
-// Clam gets rid of panning !.clamp({ direction: 'all'})
-vp.drag().wheel(1e-3).clampZoom(vp_params.clampZoom).decelerate();		
-app.stage.addChild(vp);
+// Initializations
+await pp.initialize_application()
+pp.initialize_viewport();
+pp.init_ticker();
+document.getElementById("pixir_container").appendChild(pp.view);
 
 // Enable dynamic resizing
-const resize = pn.enable_resize(app, vp);
-window.addEventListener('resize', resize); 	// Listen for window resize events
-resize();
+//- const resize = pn.enable_resize(pp.app, pp.vp);
+//- window.addEventListener('resize', resize); 	// Listen for window resize events
+//- resize();
 
-// The rest of the global variables needed to be tracked
-var nodes = null, links = null, polygons = null; 
-var nodes_gfx = null, links_gfx = null, polygons_gfx = null;
-var sim = null, sim_params = null; // the force simulation + parameters
+// Loads the graph, initializes the graphics (+ nodes w/ random coordinates)
+await pp.initialize_graph("data/les_miserables.json");
 
-const [ticker, dispatcher] = pn.register_ticker(app, vp); // the (pixi) simulation ticker
-//- sharedTicker
+// Add the graphics into the viewport; note viewport *is* a container
+pn.add_items(pp.vp, [pp.links_gfx]); // add links to stage
+pn.add_items(pp.vp, pp.nodes_gfx);   // add nodes to stage
 
-console.log("Ticker");
-console.log(ticker);
+// 
+pp.ticker.add((ticker) => {
+	pn.update_links(pp.links, pp.links_gfx);
+});
+
+// Finally, add the viewport itself to the stage 
+pp.app.stage.addChild(pp.vp)
+
+// Start the animation
+console.log("beginning ticker");
+pp.ticker.start();
+
+console.log("pixiplex: ")
+console.log(pp);
+
+
 // pn.register_tick_stops(ticker, vp);
 
 // The default drawing method to update on each tick. Draw polygons, then links. Nodes are automatically updated.
-const default_draw = () => {
-	//- if (polygons) { pn.draw_polygons(polygons); }
-	if (links) { links_gfx.clear(); pn.draw_links(links, links_gfx); }
-	//- if (sim){ sim.tick(); }
-}
+//- const default_draw = () => {
+//- 	//- if (polygons) { pn.draw_polygons(polygons); }
+//- 	if (links) { links_gfx.clear(); pn.draw_links(links, links_gfx); }
+//- 	//- if (sim){ sim.tick(); }
+//- }
 
-d3.json("data/les_miserables.json").then(function(graph) {
+//- d3.json("data/les_miserables.json").then(function(graph) {
 
-	// Show the graph 
-	console.log(graph)
+//- 	// Show the graph 
+//- 	console.log(graph)
 
-	// Generate link graphics first?
-	links_gfx = pn.generate_links_graphic();
-	links = graph.links; 
-	console.log(links_gfx);
+//- 	// Generate link graphics first?
+//- 	links_gfx = pn.generate_links_graphic();
+//- 	links = graph.links; 
+//- 	console.log(links_gfx);
 
-	// Create node graphics, then stage them
-	pn.scale_nodes(graph.nodes, width, height); // this must happen before the node graphics are generated
-	nodes_gfx = pn.generate_node_graphics(graph.nodes);
-	console.log(nodes_gfx)
+//- 	// Create node graphics, then stage them
+//- 	pn.scale_nodes(graph.nodes, width, height); // this must happen before the node graphics are generated
+//- 	nodes_gfx = pn.generate_node_graphics(graph.nodes);
+//- 	console.log(nodes_gfx)
 
-	// Register the dragging callbacks for the nodes
-	nodes_gfx.forEach((node) => {
-		//- pn.pixi_drag(node);
-		pn.compose(pn.pixi_drag(node))(pn.drag_dispatcher(node));
-	});
 
-	// Assign actual source and target node references
-	pn.resolve_links(nodes_gfx, links);
-	//- pn.resolve_links_index(nodes_gfx, links);
-	console.log("links: ")
-	console.log(links)
-	pn.draw_links(links, links_gfx);
+//- 	// Assign actual source and target node references
+//- 	pn.resolve_links(nodes_gfx, links);
+//- 	//- pn.resolve_links_index(nodes_gfx, links);
+//- 	console.log("links: ")
+//- 	console.log(links)
+//- 	pn.draw_links(links, links_gfx);
 
-	// Add the graphics to the viewport
-	pn.stage_items(vp, [links_gfx]); // add links to stage
-	pn.stage_items(vp, nodes_gfx); 	 // add nodes to stage
+//- 	// Add the graphics to the viewport
+//- 	pn.stage_items(pp.vp, [links_gfx]); // add links to stage
+//- 	pn.stage_items(pp.vp, nodes_gfx);  // add nodes to stage
 
 
 	//- const N_LINES = links.length;
 	//- const SOURCE_IDS = new Int32Array(links.map((link) => { return link.source }));
 	//- const TARGET_IDS = new Int32Array(links.map((link) => { return link.target }));
 	//- console.log(SOURCE_IDS);
-	ticker.add((ticker) =>{
+	//- ticker.add((ticker) =>{
 		//- console.log("drawing edges");
 		//- default_draw();
 		//- links_gfx.clear(); 
@@ -131,8 +110,10 @@ d3.json("data/les_miserables.json").then(function(graph) {
 		//- });
 		//- links_gfx.stroke({ width: 1, color: 0x000000 });
 		//- links_gfx.save()
-		links_gfx.clear(); 
-		pn.draw_links(links, links_gfx);
+
+		//- links_gfx.clear(); 
+		//- pn.draw_links(links, links_gfx);
+		
 		//- let new_ls = merge(line_style, ls);
 		//- link_gfx.clear();
 		//- const { source, target } = link;
@@ -141,45 +122,59 @@ d3.json("data/les_miserables.json").then(function(graph) {
 		//- 	.lineTo(target.x, target.y)
 		//- 	.stroke({ width: ls.lineWidth, color: ls.color });
 		//- return(link)
-	});
+	//- });
 
 	// Initiate the animation
 	//- dispatcher.on('tick', default_draw);
 	//- app.stage.cacheAsTexture(true);
 
-	ticker.start();
+	//- ticker.start();
 	//- ticker.call('animate'); // start 
-});
+//- });
 
 
 document.getElementById("enable_force_button").addEventListener("click", function(){
-	// Create the force simulation 
-	sim = pn.force_sim();
-	sim_params = pn.default_force_settings();
-	pn.default_force_settings(sim, app, nodes_gfx, links);
 
-	// Add force dragging emitter callbacks
-	nodes_gfx.forEach((node) => {
-		pn.compose(pn.pixi_drag(node), pn.force_drag(sim))(pn.drag_dispatcher(node));
-	});
-	sim.stop();
-	sim.alpha(1); // no restart needed
+	pp.enable_force();
+
+	// Create the force simulation 
+	//- sim = pn.force_sim();
+	//- sim_params = pn.default_force_settings();
+	//- pn.default_force_settings(sim, app, nodes_gfx, links);
+
+	//- // Add force dragging emitter callbacks
+	//- nodes_gfx.forEach((node) => {
+	//- 	pn.compose(pn.pixi_drag(node), pn.force_drag(sim))(pn.drag_dispatcher(node));
+	//- });
+	//- sim.stop();
+	//- sim.alpha(1); // no restart needed
 	
 	// Add d3-force steps to the PIXI ticker 
 	//- ticker.add((ticker) => {
 	//- 	sim.tick();
 	//- })
-	dispatcher.on("tick", function(){ sim.tick(); })
+	//- dispatcher.on("tick", function(){ sim.tick(); })
 });
 
 document.getElementById("center_button").addEventListener("click", function(){
-	vp.moveCenter(width/2, height/2);
-	console.log(nodes);
+	//- pp.vp.moveCenter(pp.width/2, pp.height/2);
+	pp.center_viewport();
+	//- console.log(nodes);
 });
 
 document.getElementById("disable_force_button").addEventListener("click", function(){
-	//- dispatcher.on("tick", null);
-	console.log(ticker)
+	pp.disable_force();
+	//- console.log(ticker)
+});
+
+document.getElementById("enable_drag_button").addEventListener("click", function(){
+	console.log("enabling drag")
+	pp.enable_drag();
+	//- console.log(ticker)
+});
+document.getElementById("disable_drag_button").addEventListener("click", function(){
+	console.log("disabling drag")
+	pp.disable_drag();
 });
 
 //- // Start lasso on double-click 
@@ -304,20 +299,20 @@ document.getElementById("disable_force_button").addEventListener("click", functi
 //- 	pn.draw_links(links, links_gfx, { color: 0xff0000 })
 //- });
 
-//- document.getElementById("enable_weak_tree").addEventListener("click", function(){
-//- 	ticker.on("tick", function(e){
-//- 		links_gfx.clear();
-//- 		pn.draw_links(links, links_gfx);	
+document.getElementById("enable_weak_tree").addEventListener("click", function(){
+	pp.dispatcher.on("tick", function(e){
+		//- links_gfx.clear();
+		//- pn.draw_links(links, links_gfx);	
 
-//- 		// Form weak tree by push targets downward
-//- 		let k = 10 * sim.alpha();
-//- 		links.forEach((link) => { 
-//- 			link.source.y -= k;
-//- 			link.target.y += k;  
-//- 		});
-//- 		sim.tick();
-//- 	});
-//- });
+		// Form weak tree by push targets downward
+		let k = 10 * pp.sim.alpha();
+		pp.links.forEach((link) => { 
+			link.source.y -= k;
+			link.target.y += k;  
+		});
+		sim.tick();
+	});
+});
 
 //- document.getElementById("add_text").addEventListener("click", function(){
 //- 	nodes.forEach((node) => {
@@ -329,4 +324,12 @@ document.getElementById("disable_force_button").addEventListener("click", functi
 //- 	});
 //- 	console.log(nodes[0]);
 
-//- });</script>
+//- });
+
+	// Add the viewport as a child of a container itself
+//- let cn = new pn.Container();
+//- cn.addChild(pp.vp);
+//- //- cn.cacheAsTexture();
+//- //- cn.enableRenderGroup();
+//- //- cn.cacheAsTexture = true; 
+//- pn.add_items(pp.app.stage, [cn])</script>

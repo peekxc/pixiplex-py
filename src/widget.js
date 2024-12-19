@@ -117,7 +117,7 @@ async function render({ model, el }) {
 			pn.resolve_links(nodes_gfx, links);
 			console.log("links: ")
 			console.log(links)
-			pn.draw_links(links, links_gfx);
+			pn.build_links(links, links_gfx);
 
 		} else if (msg.type == "msg:init_force"){
 			model.sim = pn.force_sim();

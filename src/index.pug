@@ -8,6 +8,7 @@ head
 body
 	button(id="center_button" type="button") Center
 	div 
+		button(id="init_force_button" type="button") Initialize force
 		button(id="enable_force_button" type="button") Enable force
 		button(id="disable_force_button" type="button") Disable forces
 	div 
@@ -17,9 +18,9 @@ body
 		button(id="change_node_color_button" type="button") Change node color
 		button(id="change_node_colors_button" type="button") Change node colors
 		button(id="change_node_radius_button" type="button") Change node radius
-		button(id="change_node_size" type="button") Change node size
-		button(id="change_link_width" type="button") Change link width
-		button(id="change_link_color" type="button") Change link color
+		button(id="change_node_radii_button" type="button") Change node radii
+		button(id="change_link_width_button" type="button") Change link width
+		button(id="change_link_color_button" type="button") Change link color
 	div 
 		button(id="insert_node_button" type="button") Insert node
 		button(id="remove_node_button" type="button") Remove node
@@ -32,40 +33,49 @@ body
 		button(id="lasso_button" type="button") Do Lasso
 		button(id="enable_weak_tree" type="button") Enable weak tree
 	
+	//- width: 1200px; height: 800px;
 	div(
-		id="pixir_container" style="position: relative; overflow: hidden; overflow-y: hidden; padding: 0; margin: 0; width: 1200px; height: 800px;"
+		id="pixir_container" style="position: relative; overflow: hidden; overflow-y: hidden; padding: 0; margin: 5px; border: 1px solid black; "
 	)
 //- script(src='./pixinet.js' type="module")
 //- script(src='pixiplex.min.js')
 //- script(src="https://d3js.org/d3.v4.min.js")
 //- script(src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/8.3.4/pixi.min.js" integrity="sha512-1TUvvqMWHCdVdlcys5WCmi8eu2esAcwwIXxinh5zmuQ1LNAVsm6y2QAFeuyyYUrCVsa+SnTFFPr3h2wfxaFuHg==" crossorigin="anonymous" referrerpolicy="no-referrer")
-script(src="https://d3js.org/d3-fetch.v1.min.js")
-script(src="https://d3js.org/d3-color.v1.min.js")
-script(src="https://d3js.org/d3-interpolate.v1.min.js")
-script(src="https://d3js.org/d3-scale-chromatic.v1.min.js")
-script(src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.11/lodash.core.js")
+//- script(src="https://d3js.org/d3-fetch.v1.min.js")
+//- script(src="https://d3js.org/d3-color.v1.min.js")
+//- script(src="https://d3js.org/d3-interpolate.v1.min.js")
+//- script(src="https://d3js.org/d3-scale-chromatic.v1.min.js")
+//- script(src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js")
 //- script(type="text/javascript").
 script(type="module").
 	import * as pn from "./pixinet.js"
-	console.log(pn)
+	console.log("pixinet module: ", pn)
 	console.log("Pixel ratio: " + devicePixelRatio)
 	
 	// Setup bordered container to house the canvas for debugging
-	const pn_cont = pn.select("#pixir_container").attr('display', 'inline');
-	var pixir_container = document.getElementById("pixir_container")
-	const width = pixir_container.clientWidth;
-	const height = pixir_container.clientHeight;
-	pixir_container.style.border = '1px solid black';
-	pixir_container.style.margin = '5px';
-	
+	//- let pn_cont = document.getElementById("pixir_container")
+
 	// Construct the instance 
-	const pp = new pn.Pixiplex(width, height);
+	const pp = new pn.Pixiplex(1200, 800);
+	//- pp.view.height = 800;
 	
 	// Initializations
 	await pp.initialize_application()
 	pp.initialize_viewport();
 	pp.init_ticker();
-	document.getElementById("pixir_container").appendChild(pp.view);
+	//- pn_cont.appendChild(pp.view);
+
+	// Yeah, pixi-viewport is just not correct
+	console.log(pp)
+	
+	//- console.log("canvas: ", pp.app.renderer.canvas)
+	//- pp.app.renderer.canvas.style.setProperty('border', "1 px black")
+	//- pp.app.renderer.canvas.style.setProperty('margin', "5 px")
+	//- pp.app.renderer.canvas.style.setProperty('width', '1200px')
+	//- pp.app.renderer.canvas.style.setProperty('height', '800px')
+	console.log("canvas: ", pp.app.renderer.canvas)
+	document.body.appendChild(pp.app.renderer.canvas)
+	console.log("canvas: ", pp.app.renderer.canvas)
 
 	// Enable dynamic resizing
 	//- const resize = pn.enable_resize(pp.app, pp.vp);
@@ -79,7 +89,7 @@ script(type="module").
 	pn.add_items(pp.vp, [pp.links_gfx]); // add links to stage
 	pn.add_items(pp.vp, pp.nodes_gfx);   // add nodes to stage
 	
-	// 
+
 	pp.ticker.add((ticker) => {
 		pn.update_links(pp.links, pp.links_gfx);
 	});
@@ -91,129 +101,50 @@ script(type="module").
 	console.log("beginning ticker");
 	pp.ticker.start();
 
-	console.log("pixiplex: ")
-	console.log(pp);
+	console.log("pixiplex: ", pp)
 
 
-	// pn.register_tick_stops(ticker, vp);
-	
-	// The default drawing method to update on each tick. Draw polygons, then links. Nodes are automatically updated.
-	//- const default_draw = () => {
-	//- 	//- if (polygons) { pn.draw_polygons(polygons); }
-	//- 	if (links) { links_gfx.clear(); pn.draw_links(links, links_gfx); }
-	//- 	//- if (sim){ sim.tick(); }
-	//- }
+	// Add event listeners to buttons	
 
-	//- d3.json("data/les_miserables.json").then(function(graph) {
-
-	//- 	// Show the graph 
-	//- 	console.log(graph)
-
-	//- 	// Generate link graphics first?
-	//- 	links_gfx = pn.generate_links_graphic();
-	//- 	links = graph.links; 
-	//- 	console.log(links_gfx);
-
-	//- 	// Create node graphics, then stage them
-	//- 	pn.scale_nodes(graph.nodes, width, height); // this must happen before the node graphics are generated
-	//- 	nodes_gfx = pn.generate_node_graphics(graph.nodes);
-	//- 	console.log(nodes_gfx)
-	
-
-	//- 	// Assign actual source and target node references
-	//- 	pn.resolve_links(nodes_gfx, links);
-	//- 	//- pn.resolve_links_index(nodes_gfx, links);
-	//- 	console.log("links: ")
-	//- 	console.log(links)
-	//- 	pn.draw_links(links, links_gfx);
-
-	//- 	// Add the graphics to the viewport
-	//- 	pn.stage_items(pp.vp, [links_gfx]); // add links to stage
-	//- 	pn.stage_items(pp.vp, nodes_gfx);  // add nodes to stage
-
-
-		//- const N_LINES = links.length;
-		//- const SOURCE_IDS = new Int32Array(links.map((link) => { return link.source }));
-		//- const TARGET_IDS = new Int32Array(links.map((link) => { return link.target }));
-		//- console.log(SOURCE_IDS);
-		//- ticker.add((ticker) =>{
-			//- console.log("drawing edges");
-			//- default_draw();
-			//- links_gfx.clear(); 
-			// Somehow this is really what causes the CPU spike, unknown how to fix
-			//- for (let i = 0; i < N_LINES; i++){
-			//- 	//- links_gfx
-			//- 	//- 	.moveTo(nodes_gfx[links[i].source].x, nodes_gfx[links[i].source].y)
-			//- 	//- 	.lineTo(nodes_gfx[links[i].target].x, nodes_gfx[links[i].target].y)	
-			//- 	links_gfx
-			//- 		.moveTo(nodes_gfx[SOURCE_IDS[i]].x, nodes_gfx[SOURCE_IDS[i]].y)
-			//- 		.lineTo(nodes_gfx[TARGET_IDS[i]].x, nodes_gfx[TARGET_IDS[i]].y)	
-			//- }
-			//- links.forEach((link) => {
-			//- 	const { source, target } = link;
-			//- 	links_gfx
-			//- 		.moveTo(source.x, source.y)
-			//- 		.lineTo(target.x, target.y)	
-			//- 		//- .stroke({ width: 1, color: 0x000000 });
-			//- });
-			//- links_gfx.stroke({ width: 1, color: 0x000000 });
-			//- links_gfx.save()
-
-			//- links_gfx.clear(); 
-			//- pn.draw_links(links, links_gfx);
-			
-			//- let new_ls = merge(line_style, ls);
-			//- link_gfx.clear();
-			//- const { source, target } = link;
-			//- link_gfx
-			//- 	.moveTo(source.x, source.y)
-			//- 	.lineTo(target.x, target.y)
-			//- 	.stroke({ width: ls.lineWidth, color: ls.color });
-			//- return(link)
-		//- });
-
-		// Initiate the animation
-		//- dispatcher.on('tick', default_draw);
-		//- app.stage.cacheAsTexture(true);
-
-		//- ticker.start();
-		//- ticker.call('animate'); // start 
-	//- });
-
-	
+	document.getElementById("init_force_button").addEventListener("click", function(){
+		pp.init_force();
+	});
 	document.getElementById("enable_force_button").addEventListener("click", function(){
-
 		pp.enable_force();
-
-		// Create the force simulation 
-		//- sim = pn.force_sim();
-		//- sim_params = pn.default_force_settings();
-		//- pn.default_force_settings(sim, app, nodes_gfx, links);
-
-		//- // Add force dragging emitter callbacks
-		//- nodes_gfx.forEach((node) => {
-		//- 	pn.compose(pn.pixi_drag(node), pn.force_drag(sim))(pn.drag_dispatcher(node));
-		//- });
-		//- sim.stop();
-		//- sim.alpha(1); // no restart needed
-		
-		// Add d3-force steps to the PIXI ticker 
-		//- ticker.add((ticker) => {
-		//- 	sim.tick();
-		//- })
-		//- dispatcher.on("tick", function(){ sim.tick(); })
+	});
+	document.getElementById("disable_force_button").addEventListener("click", function(){
+		pp.disable_force();
 	});
 
 	document.getElementById("center_button").addEventListener("click", function(){
 		//- pp.vp.moveCenter(pp.width/2, pp.height/2);
-		pp.center_viewport();
-		//- console.log(nodes);
+		//- pp.vp.scaled = 1;
+		let node = new pn.Graphics()
+			.circle(0, 0, 10)
+			.stroke({ width: 3, color: 0xffffff })
+			.fill({ color: 0xff0000, alpha: 1.0})
+		;
+		pp.vp.addChild(node);
+
+
+		const c_x = pp.vp.worldWidth / 2; 
+		const c_y = pp.vp.worldHeight / 2;
+
+		const br = 2*c_y; // bottom right corner; 
+
+		let node2 = new pn.Graphics()
+			.circle(c_x, c_y, 10)
+			.stroke({ width: 3, color: 0xffffff })
+			.fill({ color: 0x000000, alpha: 1.0})
+		;
+		pp.vp.addChild(node2);
+		pp.vp.fit(false);
+		//- pp.vp.moveCenter(2*c_x, 2*c_y);
+		pp.vp.moveCorner(2*c_x, 2*c_y);
+		//- pp.center_viewport();
 	});
 
-	document.getElementById("disable_force_button").addEventListener("click", function(){
-		pp.disable_force();
-		//- console.log(ticker)
-	});
+	
 
 	document.getElementById("enable_drag_button").addEventListener("click", function(){
 		console.log("enabling drag")
@@ -223,6 +154,46 @@ script(type="module").
 	document.getElementById("disable_drag_button").addEventListener("click", function(){
 		console.log("disabling drag")
 		pp.disable_drag();
+	});
+	
+	document.getElementById("change_node_color_button").addEventListener("click", function(){
+		console.log("changing node color");
+		pp.node_style.color = 0xFF7518;
+		pp.node_style.radius = 8;
+		pn.build_nodes(pp.nodes_gfx, pp.node_style);
+	});
+
+	document.getElementById("change_node_colors_button").addEventListener("click", function(){
+		console.log("changing node colors");
+		const ns = pp.node_style;
+		pp.node_style = _.map(pp.nodes, (node, i) => ({ 
+			...ns, 
+			color: i % 2 == 0 ? 0xff7518 : 0x650A5A, 
+		}));
+		//- console.log(pp.node_style);
+		pn.build_nodes(pp.nodes_gfx, pp.node_style)
+	});
+
+	document.getElementById("change_node_radius_button").addEventListener("click", function(){
+		console.log("changing node radius");
+		//- console.log(pp.nodes_gfx.slice(0, pp.nodes.length / 2))
+		pn.build_nodes(pp.nodes_gfx.slice(0, pp.nodes.length / 2), { radius: 10 });
+		pn.build_nodes(pp.nodes_gfx.slice(pp.nodes.length / 2), { radius: 5 });
+	});
+
+	document.getElementById("change_node_radii_button").addEventListener("click", function(){
+		console.log("changing node radii");
+		pn.build_nodes(pp.nodes_gfx, { radius: 10 })
+	});
+
+	document.getElementById("change_link_width_button").addEventListener("click", function(){
+		console.log("changing link width");
+		//- pn.build_nodes([pp.link_gfx], { radius: 10 })
+	});
+
+	document.getElementById("change_link_color_button").addEventListener("click", function(){
+		console.log("changing node radii");
+		//- pn.build_nodes(pp.nodes_gfx, { radius: 10 })
 	});
 
 	//- // Start lasso on double-click 
@@ -316,26 +287,7 @@ script(type="module").
 	//- document.getElementById("remove_polygon_button").addEventListener("click", function(){
 	//- });
 
-	//- document.getElementById("change_node_color_button").addEventListener("click", function(){
-	//- 	let new_node_style = { color: 65280, radius: 8 };
-	//- 	let node_subset = pn.filter(nodes, (node) => { return node.id == 0 });
-	//- 	console.log(node_subset);
-	//- 	console.log(new_node_style);
-	//- 	pn.draw_nodes(node_subset, [new_node_style]);
-	//- });
-	//- document.getElementById("change_node_colors_button").addEventListener("click", function(){
-	//- 	const rgb_to_hex = (col) => {
-	//- 		return parseInt(d3.color(col).hex().substring(1), 16)
-	//- 	}
-	//- 	let node_colors = [];
-	//- 	nodes.forEach((node, i) => { 
-	//- 		node_colors.push({ color: rgb_to_hex(d3.interpolateSpectral(i/nodes.length)) });
-	//- 	});
-	//- 	console.log(node_colors)
-	//- 	// pn.draw_nodes(nodes, node_colors);
-	//- 	// pn.draw_nodes(nodes, { color: node_colors[0].color });
-	//- 	pn.draw_nodes(nodes, node_colors);
-	//- });
+	
 	//- document.getElementById("change_node_radius_button").addEventListener("click", function(){
 	//- 	pn.draw_nodes(nodes, { radius: 2 });
 	//- });

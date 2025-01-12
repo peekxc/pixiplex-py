@@ -2,6 +2,8 @@ node_modules
 .venv
 dist
 .DS_Store
+pixiplex/static
+**/*.html
 
 # Python
 __pycache__

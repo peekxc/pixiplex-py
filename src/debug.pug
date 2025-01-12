@@ -12,17 +12,54 @@ body
 	script(type="module").
 		import * as pn from "./pixinet.js"
 
+		//- let canvas = document.createElement("canvas");
+		//- canvas.width = 1200;
+		//- canvas.height = 800;
+		//- console.log(canvas.height);
+		let res = 1.0;
 		const app = await new pn.Application();
 		await app.init({ 
-			background: 0xededed, 
-			resizeTo: window, 
+			autoResize: false, 
+			background: 0xededed,
 			autoStart: false,
 			transparent: false, 
-			resolution: devicePixelRatio, 
+			resolution: res, 
 			antialias: true, 
 			forceCanvas: false,
 		});
-		document.body.appendChild(app.canvas);
+		console.log(app)
+
+		let canvas = app.canvas
+		console.log(canvas)
+		app.renderer.resize(1200,800,res)
+		canvas.width = 1200;
+		canvas.height = 800;
+		canvas.onwheel = function(event){ event.preventDefault(); };
+		canvas.onmousewheel = function(event){ event.preventDefault(); };
+
+
+
+		console.log(canvas.height);
+		document.body.appendChild(canvas);
+		console.log(canvas.height);
+		//- const app = new PIXI.Application();
+		//- document.body.appendChild(app.view);
+
+		// create viewport
+		console.log(app.canvas)
+		console.log(canvas.height);
+		let viewport = new pn.Viewport({
+			//- screenWidth: canvas.width,
+			//- screenHeight: canvas.height,
+			worldWidth: canvas.width,
+			worldHeight: canvas.height,
+			passiveWheel: false, 
+			events: app.renderer.events, // the interaction module is important for wheel to work properly when renderer.view is placed or scaled
+		});
+		viewport.drag().wheel(1e-3).decelerate();
+		viewport.fit()
+		console.log(viewport);
+		console.log(canvas.height);
 
 		// Construct some random nodes
 		let node_context = new pn.GraphicsContext()
@@ -35,8 +72,22 @@ body
 			let node = new pn.Graphics(node_context);
 			node.x = Math.random() * app.renderer.width; 
 			node.y = Math.random() * app.renderer.height; 
-			app.stage.addChild(node);
+			viewport.addChild(node);
 		}
+
+		// This should be at the center of the viewport!
+		let node_c = new pn.Graphics()
+			.circle(0, 0, 6)
+			.stroke({ width: 1.5, color: 0xFFFFFF })
+			.fill({color: 0x000000 });
+		node_c.x = 600; 
+		node_c.y = 400; 
+		viewport.addChild(node_c);
+
+		console.log(canvas.height);
+		app.stage.addChild(viewport);
 		app.start();
+		viewport.moveCenter(600, 400); // <- this doesnt work
+		console.log(canvas.height);
 		console.log(app)
 

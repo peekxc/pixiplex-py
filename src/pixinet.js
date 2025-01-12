@@ -12,6 +12,7 @@ import { dispatch } from 'd3-dispatch';
 import { assign, forOwn, map, remove, concat, filter, unionBy, pullAllBy, pullAllWith, intersectionWith, unionWith, differenceBy, differenceWith, transform, includes, isFunction, isEmpty, merge, flatMap, sum } from 'lodash-es';
 import { forceCenter, forceCollide, forceLink, forceManyBody, forceRadial, forceSimulation, forceX, forceY } from 'd3-force';
 import * as d3_force from 'd3-force';
+import { json } from 'd3-fetch';
 // import * as EventEmitter from 'eventemitter3';
 
 export const combinations = (n, k) => {
@@ -256,17 +257,28 @@ export const build_nodes = (nodes, ns = node_style) => {
 		// console.log(ns[0])
 		// console.log(default_ns(nodes[0]))
 		// console.log(merge(default_ns(nodes[0]), ns[0]))
-		nodes.forEach((node, i) => { build_node(node, merge(default_ns(node), ns[i])) })
+		// nodes.forEach((node, i) => { build_node(node, merge(default_ns(node), ns[i])) })
+		nodes.forEach((node, i) => { 
+			const ns_new = merge(node_style, ns[i]);
+			// node.clear(); // this might be shared! 
+			node.context = new GraphicsContext()
+				.circle(0, 0, ns_new.radius)
+				.stroke({ width: ns_new.lineStyle.size, color: ns_new.lineStyle.color })
+				.fill({ color: ns_new.color, alpha: ns_new.alpha})
+			;
+		});
 	} else if (ns.constructor == Object){
 		// https://pixijs.com/8.x/guides/components/graphics#the-graphicscontext
-		let ns_new = merge(default_ns(node), ns);
+		const ns_new = merge(node_style, ns);
 		let ns_context = new GraphicsContext()
 			.circle(0, 0, ns_new.radius)
 			.stroke({ width: ns_new.lineStyle.size, color: ns_new.lineStyle.color })
 			.fill({ color: ns_new.color, alpha: ns_new.alpha})
 		;
 		nodes.forEach((node) => { node.clear(); node.context = ns_context; });
-		// nodes.forEach((node) => { build_node(node, ns_new) })
+		// nodes.forEach((node) => { build_node(node, ns_new) });
+	} else {
+		console.log("Failed to apply node styling.")
 	}
 }
 
@@ -639,16 +651,41 @@ export const group_items = (items, acc = identity) => {
 	return group;
 }
 
+function readTextFile(file, callback) {
+	var rawFile = new XMLHttpRequest();
+	rawFile.overrideMimeType("application/json");
+	rawFile.open("GET", file, true);
+	rawFile.onreadystatechange = function() {
+		if (rawFile.readyState === 4 && rawFile.status == "200") {
+			callback(rawFile.responseText);
+		}
+	}
+	rawFile.send(null);
+}
+
 class Pixiplex {
-	constructor(width = 250, height = 250){
+	constructor(width = 250, height = 250, scale = 5.0){
 		this.width = width
 		this.height = height
+		this.scale = scale
 		this.nodes = null
 		this.links = null
 		this.polygons = null
 		this.nodes_gfx = null
 		this.links_gfx = null
 		this.polygons_gfx = null;
+
+		this.node_style = node_style;
+		this.line_style = line_style;
+		this.polygon_style = polygon_style;
+		
+		// Default force parameters
+		// < name > : { enabled: < boolean >, type: < force type >, params: { < force parameters > } }
+		this.force_params = { 
+			charge: { enabled: true, type: "forceManyBody", params: { strength: function() { return -30 }, distanceMin: 1, distanceMax: Infinity } },
+			link: { enabled: true, type: "forceLink", params: { distance: 30, iterations: 1, id: function(d){ return d.id; } } },
+			center: { enabled: true, type: "forceCenter", params: { x: 0, y: 0 } }
+		}
 		// this.sim = null
 		// this.sim_params = null // the force simulation + parameters
 	}
@@ -658,25 +695,31 @@ class Pixiplex {
 	// - view
 	async initialize_application(options){
 		this.view = document.createElement('canvas');
-		this.view.style.width = this.width + 'px'
-		this.view.style.height = this.height + 'px'
+		this.view.width = this.width;
+		this.view.height = this.height;
+		// this.view.style.width = this.width + 'px'
+		// this.view.style.height = this.height + 'px'
 		this.view.onwheel = function(event){ event.preventDefault(); };
 		this.view.onmousewheel = function(event){ event.preventDefault(); };
-		//- pn.set_dpi(view, 288);
+		// set_dpi(this.view, 288);
+		console.log(this.view);
 		this.app = new Application();
 		let app_params = {
 			canvas: this.view,
 			antialias: true, 
-			backgroundColor: 0xffffff, 
+			backgroundColor: 0xededed, 
 			resolution: 1.2*devicePixelRatio, 
 			//- resolution: 1.0,
 			sharedTicker: true, 
 			transparent: false,
-			autoResize: true, 
+			autoResize: false, 
+			// resizeTo: window,
 			forceCanvas: false, // NOTE: this can force CPU? 
 			autoStart: false // <- note the animation updates won't be immediate! 
 		}
 		await this.app.init(assign(app_params, options));
+		this.app.canvas.width = this.width
+		this.app.canvas.height = this.height
 	}
 
 	// Create a viewport to handle panning, dragging, etc.
@@ -686,10 +729,10 @@ class Pixiplex {
 		if (Object.hasOwn(this, "app")){
 			this.vp = create_viewport(this.app, this.width, this.height);
 			var vp_params = {
-				clampZoom: { minWidth: this.width/5, maxWidth: this.width*5, minHeight: this.height/5, maxHeight: this.height*5 }
+				clampZoom: { minWidth: this.width/this.scale, maxWidth: this.width*this.scale, minHeight: this.height/this.scale, maxHeight: this.height*this.scale }
 			}
-			// Clam gets rid of panning !.clamp({ direction: 'all'})
-			this.vp.drag().wheel(1e-3).clampZoom(vp_params.clampZoom).decelerate();		
+			// Clamp gets rid of panning !.clamp({ direction: 'all'})
+			this.vp.drag().wheel(1e-3).clamp({ direction: 'all'}).clampZoom(vp_params.clampZoom).decelerate();		
 			// this.app.stage.addChild(this.vp);
 		}
 	}
@@ -709,7 +752,8 @@ class Pixiplex {
 		if (Object.hasOwn(this, "nodes") && Object.hasOwn(this, "links")){
 			// First: add (x,y) coordinates to nodes, if not given, and scale them by the width/height
 			scale_nodes(nodes, this.width, this.height)
-			this.nodes_gfx = generate_node_graphics(nodes);
+			// this.nodes_gfx = generate_node_graphics(nodes);
+			this.init_node_gfx(nodes);
 			
 			// Populate the links with node graphic references
 			resolve_links(this.nodes_gfx, links);
@@ -718,8 +762,15 @@ class Pixiplex {
 		}
 	}
 
+	// Should only be called once
+	init_node_gfx(nodes){
+		// Merge new Graphics instances w/ node attributes, then 'build' by apply the styling
+		this.nodes_gfx = map(nodes, (node) => { return assign(new Graphics(), node); })
+		build_nodes(this.nodes_gfx, this.node_style)
+	}
+
 	async initialize_graph(json_path){
-		return d3.json(json_path).then((graph) => {
+		return json(json_path).then((graph) => {
 			// console.log(this)
 			this.links = graph.links; 
 			this.nodes = graph.nodes;
@@ -728,7 +779,25 @@ class Pixiplex {
 			console.log(this.nodes);
 			console.log("links: ")
 			console.log(this.links)
+
+			// Update force parameters: TODO add to separate methods
+			assign(this?.force_params?.center?.params, { x: this.width / 2, y: this.height / 2 });
+			assign(this?.force_params?.link?.params, { links: this.links });
 		});
+	}
+
+	initialize_graph_data(nodes, links){
+		this.links = links; 
+		this.nodes = nodes;
+		this.initialize_graphics(this.nodes, this.links)
+		console.log("nodes: ");
+		console.log(this.nodes);
+		console.log("links: ")
+		console.log(this.links)
+
+		// Update force parameters: TODO add to separate methods
+		assign(this?.force_params?.center?.params, { x: this.width / 2, y: this.height / 2 });
+		assign(this?.force_params?.link?.params, { links: this.links });
 	}
 
 	// Register the dragging callbacks for the nodes
@@ -796,14 +865,17 @@ class Pixiplex {
 		});
 	}
 
-
-	enable_force(sim_options = {}){
+	init_force(sim_options){
 		if (!Object.hasOwn(this, "sim")){ 
 			console.log("Enabling force simulation");
 			this.sim = forceSimulation(this.nodes_gfx); 
 			this.sim.stop();
 			this.sim.alpha(1.0); // no restart needed
+		}
 
+		// Apply default forces if not given
+		if (typeof sim_options == 'undefined'){ 
+			console.log("Using default force settings");
 			apply_sim(this.sim, default_sim_params)
 			apply_force(this.sim, default_sim_params.force)
 			this.sim.force('center').x(this.width / 2).y(this.height / 2);
@@ -812,14 +884,21 @@ class Pixiplex {
 			apply_sim(this.sim, sim_options)
 			apply_force(this.sim, sim_options.force)
 		}
-		this.dispatcher.on("tick", () => { this.sim.tick(); })
-		
+
+		this.enable_force();
+	};
+
+	enable_force(){
+		let sim = this.sim;
+		this.dispatcher.on("tick.force", () => { 
+			sim.tick(); 
+		});
 		// Attach dispatchers for force events
 		// force_drag(this.sim)(this.dispatcher);
 	}
 
 	disable_force(){
-		this.dispatcher.on("tick", null);
+		this.dispatcher.on("tick.force", null);
 	}
 
 	// TODO: debug centering, experiment w/ different kinds of recenterings
@@ -827,15 +906,35 @@ class Pixiplex {
 		const num_nodes = this.nodes_gfx.length;
 		const mean_x = sum(this.nodes_gfx.map((node) => { return node.x; })) / num_nodes;
 		const mean_y = sum(this.nodes_gfx.map((node) => { return node.y; })) / num_nodes;
-		this.vp.moveCenter(mean_x, mean_y);
+		console.log("Graph center: ", mean_x, mean_y);
+		console.log("World center: ", this.width / 2, this.height / 2);
+		// this.vp.fit(this.width, this.height)
+
+		this.vp.fit(true, this.width, this.height);
+		// this.vp.fit();
+		this.sim.stop();
+		// this.sim.force('center', null);
+		// this.sim.force('center').x(this.width / 2).y(this.height / 2);
+		this.sim.force('center').x(0).y(0);
+		for (let i = 0; i < this.nodes_gfx.length; i++) {
+			this.nodes_gfx[i].position.x -= mean_x;
+			this.nodes_gfx[i].position.y -= mean_y;
+			// if (Object.hasOwn(this, "sim")){
+			// 	this.sim.nodes()[i].x -= mean_x; // Sync with D3 simulation
+			// 	this.sim.nodes()[i].y -= mean_y; // Sync with D3 simulation
+			// }
+			this.nodes_gfx[i].position.x += this.width / 2;
+			this.nodes_gfx[i].position.y += this.height / 2;
+		}
+		this.vp.moveCenter(this.width / 2, this.height / 2);
+		this.sim.force('center').x(this.width / 2).y(this.height / 2);
+		this.sim.restart();
+		this.app.renderer.render(this.app.stage);
 	}
-
-
-
 }
 
 
 export { select }
 export { map, forOwn, remove, concat, filter, unionBy, unionWith, pullAllBy, pullAllWith, intersectionWith, differenceBy, differenceWith, transform, includes, isEmpty, merge, flatMap}
-export { Application, Graphics, GraphicsContext, Polygon, Text, Ticker, Container }
+export { Application, Graphics, GraphicsContext, Polygon, Text, Ticker, Container, Viewport }
 export { Pixiplex }

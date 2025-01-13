@@ -934,7 +934,7 @@ class Pixiplex {
 }
 
 
-export { select }
-export { map, forOwn, remove, concat, filter, unionBy, unionWith, pullAllBy, pullAllWith, intersectionWith, differenceBy, differenceWith, transform, includes, isEmpty, merge, flatMap}
-export { Application, Graphics, GraphicsContext, Polygon, Text, Ticker, Container, Viewport }
+// export { select }
+// export { map, forOwn, remove, concat, filter, unionBy, unionWith, pullAllBy, pullAllWith, intersectionWith, differenceBy, differenceWith, transform, includes, isEmpty, merge, flatMap}
+// export { Application, Graphics, GraphicsContext, Polygon, Text, Ticker, Container, Viewport }
 export { Pixiplex }

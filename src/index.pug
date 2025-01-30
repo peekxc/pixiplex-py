@@ -7,13 +7,14 @@ head
 	meta(name='theme-color' content='#000000')
 body
 	button(id="center_button" type="button") Center
+	button(id="draw_grid_button" type="button") Draw Grid
 	div 
 		button(id="init_force_button" type="button") Initialize force
 		button(id="enable_force_button" type="button") Enable force
 		button(id="disable_force_button" type="button") Disable forces
 	div 
-		button(id="enable_drag_button" type="button") Enable drag
-		button(id="disable_drag_button" type="button") Disable drag
+		button(id="enable_drag_button" type="button") Enable node drag
+		button(id="disable_drag_button" type="button") Disable node drag
 	div 
 		button(id="change_node_color_button" type="button") Change node color
 		button(id="change_node_colors_button" type="button") Change node colors
@@ -48,15 +49,19 @@ body
 //- script(src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js")
 //- script(type="text/javascript").
 script(type="module").
+	const WORLD_WIDTH = 1000;
+	const WORLD_HEIGHT = 1000;
 	import * as pn from "./pixinet.js"
-	console.log("pixinet module: ", pn)
+	//- console.log("pixinet module: ", pn)
 	console.log("Pixel ratio: " + devicePixelRatio)
+	window.pn = pn
 	
 	// Setup bordered container to house the canvas for debugging
 	//- let pn_cont = document.getElementById("pixir_container")
 
 	// Construct the instance 
 	const pp = new pn.Pixiplex(1200, 800);
+	window.pp = pp; // debugging
 	//- pp.view.height = 800;
 	
 	// Initializations
@@ -64,9 +69,6 @@ script(type="module").
 	pp.initialize_viewport();
 	pp.init_ticker();
 	//- pn_cont.appendChild(pp.view);
-
-	// Yeah, pixi-viewport is just not correct
-	console.log(pp)
 	
 	//- console.log("canvas: ", pp.app.renderer.canvas)
 	//- pp.app.renderer.canvas.style.setProperty('border', "1 px black")
@@ -75,7 +77,6 @@ script(type="module").
 	//- pp.app.renderer.canvas.style.setProperty('height', '800px')
 	console.log("canvas: ", pp.app.renderer.canvas)
 	document.body.appendChild(pp.app.renderer.canvas)
-	console.log("canvas: ", pp.app.renderer.canvas)
 
 	// Enable dynamic resizing
 	//- const resize = pn.enable_resize(pp.app, pp.vp);
@@ -89,7 +90,7 @@ script(type="module").
 	pn.add_items(pp.vp, [pp.links_gfx]); // add links to stage
 	pn.add_items(pp.vp, pp.nodes_gfx);   // add nodes to stage
 	
-
+	// 
 	pp.ticker.add((ticker) => {
 		pn.update_links(pp.links, pp.links_gfx);
 	});
@@ -105,7 +106,6 @@ script(type="module").
 
 
 	// Add event listeners to buttons	
-
 	document.getElementById("init_force_button").addEventListener("click", function(){
 		pp.init_force();
 	});
@@ -144,6 +144,39 @@ script(type="module").
 		//- pp.center_viewport();
 	});
 
+	document.getElementById("draw_grid_button").addEventListener("click", function(){
+		// Constants for grid settings
+		const n = 100; // horizontal spacing
+		const m = 100; // vertical spacing
+		const rows = Math.floor(pp.app.renderer.height / m);
+		const cols = Math.floor(pp.app.renderer.width / n);
+
+		// Graphics object to draw grid
+		const graphics = new pn.Graphics();
+		pp.vp.addChild(graphics);
+
+		// Draw horizontal grid lines
+		for (let i = 0; i <= rows; i++) {
+			graphics.moveTo(0, i * m);
+			graphics.lineTo(pp.app.renderer.width, i * m);
+			graphics.stroke({ width: 2, color: 0x000000 });
+		}
+
+		// Draw vertical grid lines
+		for (let j = 0; j <= cols; j++) {
+			graphics.moveTo(j * n, 0);
+			graphics.lineTo(j * n, pp.app.renderer.height);
+			graphics.stroke({ width: 2, color: 0x000000 });
+		}
+		for (let i = 0; i <= rows; i++) {
+			for (let j = 0; j <= cols; j++) {
+				const text = new pn.Text({text: `(${j * n},${i * m})`, style: { fontSize: 12 } });
+				text.x = j * n + 2; // Offset for readability
+				text.y = i * m + 2;
+				pp.vp.addChild(text);
+			}
+		}
+	})
 	
 
 	document.getElementById("enable_drag_button").addEventListener("click", function(){

@@ -43,14 +43,14 @@ export const make_scale = (w, h) => {
 	return { scale: scale_xy, invert: invert_scale_xy };
 }
 
-const node_style = { 
+export const node_style = { 
 	lineStyle: { size: 1.5, color: 0xFFFFFF },
 	color: 0x650A5A,
 	radius: 6,
 	alpha: 1
 }
-const line_style = { lineWidth: 1, color: 0x000000, alpha: 1 }
-const polygon_style = {
+export const line_style = { lineWidth: 1, color: 0x000000, alpha: 1 }
+export const polygon_style = {
 	lineStyle: { size: 1.5, color: 0xFFFFFF },
 	color: 0x650A5A,
 	alpha: 0.20
@@ -64,7 +64,7 @@ let default_link_params = {
 };
 let default_manybody_params = { strength: function() { return -30 }, distanceMin: 1, distanceMax: Infinity }
 let default_center_params = { x: 0, y: 0 }
-const default_sim_params = {
+export const default_sim_params = {
 	alpha: 1, 
 	force: { // < name > : { enabled: < boolean >, type: < force type >, params: { < force parameters > } }
 	  charge: { enabled: true, type: "forceManyBody", params: default_manybody_params },
@@ -231,7 +231,7 @@ export const build_node = (node, ns = node_style) => {
 // color: 0x650A5A,
 // radius: 6,
 // alpha: 1
-// export const update_node_style = (gfx, ns) => {
+// const update_node_style = (gfx, ns) => {
 // 	var len = gfx.graphicsData.length;    
 //   for (var i = 0; i < len; i++) {        
 //     var data = gfx.graphicsData[i];
@@ -243,7 +243,7 @@ export const build_node = (node, ns = node_style) => {
 //   }   
 // }
 
-// export const set_node_style = (nodes, ns = node_style) => {
+// const set_node_style = (nodes, ns = node_style) => {
 // 	if (ns.constructor === Array && ns.length == nodes.length){
 // 		nodes.forEach((node, i) => { draw_node(node, Object.assign(node_style, ns[i])) })
 // 	} else if (ns.constructor == Object){
@@ -403,7 +403,7 @@ export const pixi_drag = (pixi_obj) => {
 // Enable PIXI dragging for a given PIXI object. The object could be any DisplayObject, 
 // e.g. a graphics object or a container. Returns a dispatcher which can be used to add  
 // event listeners to the start, end, and during drag events 
-// export const enable_drag = (dispatcher, pixi_obj) => {
+// const enable_drag = (dispatcher, pixi_obj) => {
 // 	if (!pixi_obj.interactive){ pixi_obj.interactive = true; }
 // 	let dispatcher = dispatch("start", "end", "dragging");
 // 	pixi_obj.on('pointerdown', function(e){
@@ -521,7 +521,7 @@ export const set_dpi = (canvas, dpi) => {
 }
 
 // Applies default settings to force simulation
-export function default_force_settings(sim, app, nodes, links){
+function default_force_settings(sim, app, nodes, links){
 	// console.log("arg len: "+arguments.length);
 	// console.log(sim);
 	if (arguments.length < 4){
@@ -615,7 +615,7 @@ export const enable_lasso = (visRootID) => {
 	return(dispatcher);
 }
 
-// export const start_lasso = (nodes, svg_el) => {
+// const start_lasso = (nodes, svg_el) => {
 // 	svg_el.style('display', 'inline');
 
 // 	// Reset selected points when starting a new polygon
@@ -694,32 +694,35 @@ class Pixiplex {
 	// - app 
 	// - view
 	async initialize_application(options){
-		this.view = document.createElement('canvas');
-		this.view.width = this.width;
-		this.view.height = this.height;
+		// this.view = document.createElement('canvas');
+		// this.view.width = this.width;
+		// this.view.height = this.height;
 		// this.view.style.width = this.width + 'px'
 		// this.view.style.height = this.height + 'px'
-		this.view.onwheel = function(event){ event.preventDefault(); };
-		this.view.onmousewheel = function(event){ event.preventDefault(); };
 		// set_dpi(this.view, 288);
-		console.log(this.view);
+		// console.log(this.view.width);
 		this.app = new Application();
 		let app_params = {
-			canvas: this.view,
+			// canvas: this.view,
+			width: this.width,  // NOTE: this is preferred over making own canvas!
+			height: this.height,
 			antialias: true, 
 			backgroundColor: 0xededed, 
-			resolution: 1.2*devicePixelRatio, 
-			//- resolution: 1.0,
+			// resolution: 1.2*devicePixelRatio, 
+			resolution: 1.0,
 			sharedTicker: true, 
 			transparent: false,
 			autoResize: false, 
-			// resizeTo: window,
+			// resizeTo: this.view,
 			forceCanvas: false, // NOTE: this can force CPU? 
 			autoStart: false // <- note the animation updates won't be immediate! 
 		}
 		await this.app.init(assign(app_params, options));
-		this.app.canvas.width = this.width
-		this.app.canvas.height = this.height
+		// this.app.canvas.width = this.width
+		// this.app.canvas.height = this.height
+		this.view = this.app.canvas
+		this.view.onwheel = function(event){ event.preventDefault(); };
+		this.view.onmousewheel = function(event){ event.preventDefault(); };
 	}
 
 	// Create a viewport to handle panning, dragging, etc.
@@ -732,7 +735,8 @@ class Pixiplex {
 				clampZoom: { minWidth: this.width/this.scale, maxWidth: this.width*this.scale, minHeight: this.height/this.scale, maxHeight: this.height*this.scale }
 			}
 			// Clamp gets rid of panning !.clamp({ direction: 'all'})
-			this.vp.drag().wheel(1e-3).clamp({ direction: 'all'}).clampZoom(vp_params.clampZoom).decelerate();		
+			this.vp.drag({ wheel: false }).wheel(1e-3).clamp({ direction: 'all'}).clampZoom(vp_params.clampZoom).decelerate();
+			// this.vp.drag().wheel(1e-3).clamp({ direction: 'all'}).clampZoom(vp_params.clampZoom).decelerate();		
 			// this.app.stage.addChild(this.vp);
 		}
 	}
@@ -775,10 +779,10 @@ class Pixiplex {
 			this.links = graph.links; 
 			this.nodes = graph.nodes;
 			this.initialize_graphics(this.nodes, this.links)
-			console.log("nodes: ");
-			console.log(this.nodes);
-			console.log("links: ")
-			console.log(this.links)
+			// console.log("nodes: ");
+			// console.log(this.nodes);
+			// console.log("links: ")
+			// console.log(this.links)
 
 			// Update force parameters: TODO add to separate methods
 			assign(this?.force_params?.center?.params, { x: this.width / 2, y: this.height / 2 });
@@ -807,7 +811,7 @@ class Pixiplex {
 		// Make sure the viewport is interactive
 		this.vp.interactive = true; 
 		this.vp.visible = true; 
-		this.vp.hitArea = this.vp.getBounds();
+		// this.vp.hitArea = this.vp.getBounds();
 		
 		// From: https://pixijs.com/8.x/examples/events/dragging
 		let dragTarget = null;
@@ -936,5 +940,5 @@ class Pixiplex {
 
 // export { select }
 // export { map, forOwn, remove, concat, filter, unionBy, unionWith, pullAllBy, pullAllWith, intersectionWith, differenceBy, differenceWith, transform, includes, isEmpty, merge, flatMap}
-// export { Application, Graphics, GraphicsContext, Polygon, Text, Ticker, Container, Viewport }
+export { Application, Graphics, GraphicsContext, Polygon, Text, Ticker, Container, Viewport }
 export { Pixiplex }

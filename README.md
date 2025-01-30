@@ -4,11 +4,11 @@
 
 ## Development 
 
-Below is the *correct* dev workflow. 
+Below is the *correct* dev workflow, based on [anywidgets dev workflow](https://youtu.be/600PU6E4Srw?si=z2yqNLeX9-M2gedf).
 
 ### pixiplex Python widget 
 
-Use Jupyter lab w/ DevTools.
+Use Jupyter lab w/ devtools (option + cmd + I).
 
 ```bash
 jupyter lab 
@@ -20,9 +20,9 @@ Point the source of the jupyter widget to the `pixiplex/static/*` files, *NOT* t
 npx esbuild --bundle --format=esm --outdir=pixiplex/static src/widget.js src/pixinet.js --watch
 ```
 
-Done. Editing files on jupyter lab triggers an automatic update to the notebook via HMR, and you can use devtools. 
+Now, editing files on jupyter lab triggers an automatic update to the notebook via HMR, and you can use devtools. 
 
-Unfortunately, opening the notebook via VSCode does works with HMR, but devtools is messed up. 
+Unfortunately, opening the notebook via VSCode does works with HMR, but devtools is useless in VSCode. 
 
 ### pixiplex JS library 
 
@@ -32,7 +32,7 @@ graph in `index.pug`. To develop the JS component, the workflow is:
 1. Setup watchers for `index.pug` and `pixinet.js` via pug and esbuild, respectively. 
 
 ```bash
-npx pug src/index.pug --out pixiplex/static
+npx pug src/index.pug --out pixiplex/static --watch
 npx esbuild --bundle --format=esm --outdir=pixiplex/static src/widget.js src/pixinet.js --watch
 ```
 
@@ -42,5 +42,4 @@ npx esbuild --bundle --format=esm --outdir=pixiplex/static src/widget.js src/pix
 (pixiplex-py)$ http-server pixiplex/static
 ```
 
-This will serve the output `index.html` file. By tweaking the `src/pixinet.js` or `index.pug` and verifying functionality, 
-the corresponding library can be built incrementally until the desired functionality is implemented.
+This will serve the output `index.html` file. Tweak `src/pixinet.js` or `index.pug` incrementally until desired functionality is verified. 

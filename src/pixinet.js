@@ -15,6 +15,11 @@ import * as d3_force from 'd3-force';
 import { json } from 'd3-fetch';
 // import * as EventEmitter from 'eventemitter3';
 
+import { AbstractRenderer } from 'pixi.js';
+
+// Can also be passed into the renderer directly e.g `autoDetectRenderer({resolution: 1})`
+AbstractRenderer.defaultOptions.resolution = 5.0;
+
 export const combinations = (n, k) => {
   const result= [];
   const combos = [];
@@ -43,33 +48,33 @@ export const make_scale = (w, h) => {
 	return { scale: scale_xy, invert: invert_scale_xy };
 }
 
-export const node_style = { 
+export const NODE_STYLE = { 
 	lineStyle: { size: 1.5, color: 0xFFFFFF },
 	color: 0x650A5A,
 	radius: 6,
 	alpha: 1
 }
-export const line_style = { lineWidth: 1, color: 0x000000, alpha: 1 }
-export const polygon_style = {
+export const LINE_STYLE = { lineWidth: 1, color: 0x000000, alpha: 1 }
+export const POLYGON_STYLE = {
 	lineStyle: { size: 1.5, color: 0xFFFFFF },
 	color: 0x650A5A,
 	alpha: 0.20
 }
 
 // Parameter for all forces
-let default_link_params = { 
+let _default_link_params = { 
 	distance: 30,
 	iterations: 1, 
 	id: function(d){ return d.id; } 
 };
-let default_manybody_params = { strength: function() { return -30 }, distanceMin: 1, distanceMax: Infinity }
-let default_center_params = { x: 0, y: 0 }
+let _default_manybody_params = { strength: function() { return -30 }, distanceMin: 1, distanceMax: Infinity }
+let _default_center_params = { x: 0, y: 0 }
 export const default_sim_params = {
 	alpha: 1, 
 	force: { // < name > : { enabled: < boolean >, type: < force type >, params: { < force parameters > } }
-	  charge: { enabled: true, type: "forceManyBody", params: default_manybody_params },
-	  link: { enabled: true, type: "forceLink", params: default_link_params },
-	  center: { enabled: true, type: "forceCenter", params: default_center_params }
+	  charge: { enabled: true, type: "forceManyBody", params: _default_manybody_params },
+	  link: { enabled: true, type: "forceLink", params: _default_link_params },
+	  center: { enabled: true, type: "forceCenter", params: _default_center_params }
 	}
 };
 
@@ -88,7 +93,7 @@ export const current_ns = (node) => {
 }
 export const default_ns = (node) => {
 	let c_ns = current_ns(node);
-	let res = node_style;
+	let res = NODE_STYLE;
 	if ("alpha" in c_ns){ res.alpha = c_ns.alpha; }
 	if ("color" in c_ns){ res.color = c_ns.color; }
 	if ("radius" in c_ns){ res.radius = c_ns.radius; }
@@ -197,6 +202,7 @@ export const create_viewport = (app, sw, sh, ww=sw, wh=sh) => {
 		worldWidth: ww, 
 		worldHeight: wh,
 		events: app.renderer.events,  // this changed; app must be initialized
+		threshold: 10,  // number of pixels to move to trigger an input event 
 		// stopPropagation: true, 
 		// interaction: app.renderer.plugins.interaction
 	});
@@ -251,29 +257,24 @@ export const build_node = (node, ns = node_style) => {
 // 	}
 // }
 
-// Draws the nodes according to the current style; adds them to 
-export const build_nodes = (nodes, ns = node_style) => {
+// Draws the nodes according to the current style, which can be a single single style or a style per-node
+export const build_nodes = (nodes, ns) => {
 	if (ns.constructor === Array && ns.length == nodes.length){
-		// console.log(ns[0])
-		// console.log(default_ns(nodes[0]))
-		// console.log(merge(default_ns(nodes[0]), ns[0]))
-		// nodes.forEach((node, i) => { build_node(node, merge(default_ns(node), ns[i])) })
 		nodes.forEach((node, i) => { 
-			const ns_new = merge(node_style, ns[i]);
 			// node.clear(); // this might be shared! 
 			node.context = new GraphicsContext()
-				.circle(0, 0, ns_new.radius)
-				.stroke({ width: ns_new.lineStyle.size, color: ns_new.lineStyle.color })
-				.fill({ color: ns_new.color, alpha: ns_new.alpha})
+				.circle(0, 0, ns[i].radius)
+				.stroke({ width: ns[i].lineStyle.size, color: ns[i].lineStyle.color })
+				.fill({ color: ns[i].color, alpha: ns[i].alpha})
 			;
 		});
 	} else if (ns.constructor == Object){
 		// https://pixijs.com/8.x/guides/components/graphics#the-graphicscontext
-		const ns_new = merge(node_style, ns);
+		// const ns_new = merge(NODE_STYLE, ns); // TODO: this replaces default_ns
 		let ns_context = new GraphicsContext()
-			.circle(0, 0, ns_new.radius)
-			.stroke({ width: ns_new.lineStyle.size, color: ns_new.lineStyle.color })
-			.fill({ color: ns_new.color, alpha: ns_new.alpha})
+			.circle(0, 0, ns.radius)
+			.stroke({ width: ns.lineStyle.size, color: ns.lineStyle.color })
+			.fill({ color: ns.color, alpha: ns.alpha})
 		;
 		nodes.forEach((node) => { node.clear(); node.context = ns_context; });
 		// nodes.forEach((node) => { build_node(node, ns_new) });
@@ -282,50 +283,29 @@ export const build_nodes = (nodes, ns = node_style) => {
 	}
 }
 
-// Optionally overrides the line style, then draws a single link. Does not call endFill. 
-export const build_link = (link, link_gfx, ls = line_style) => {
-	const { source, target } = link;
-	link_gfx
-		// .moveTo(source.x, source.y)
-		// .lineTo(target.x, target.y)
-		.stroke({ width: ls.lineWidth, color: ls.color });
-	return(link)
-}
-
 // Draw Links according to a given styling, or default style otherwise
 // If the supplied line style is an array, draw links with individual styles.
 // otherwise if the supplied link style is an object, draws all links with that style.
-export const build_links = (links, link_gfx, ls = line_style) => {
+export const build_links = (links, link_gfx, ls) => {
 	if (ls.constructor === Array && ls.length == links.length){
 		// console.log("Drawing lines as arrays")
 		links.forEach((link, i) => { 
-			build_link(link, link_gfx, merge(line_style, ls[i]));
+			const { source, target } = link;
+			link_gfx
+				.moveTo(source.x, source.y)
+				.lineTo(target.x, target.y)
+				.stroke({ width: ls.lineWidth, color: ls.color });
 		});
 	} // o.w. draw every link with specified style
 	else if (ls.constructor == Object){
-		let new_ls = merge(line_style, ls);
-		// link_gfx.clear();
-		// links.forEach((link) => { 
-		// 	const { source, target } = link;
-		// 	link_gfx
-		// 		.moveTo(source.x, source.y)
-		// 		.lineTo(target.x, target.y)
-		// 		// .stroke({ width: ls.lineWidth, color: ls.color })
-		// });
-		link_gfx.stroke({ width: new_ls.lineWidth, color: new_ls.color });
+		// TODO: make this as optimized as possible
+		link_gfx.clear();
+		links.forEach((link) => { 
+			const { source, target } = link;
+			link_gfx.moveTo(source.x, source.y).lineTo(target.x, target.y)
+		});
+		link_gfx.stroke({ width: ls.lineWidth, color: ls.color });
 	}
-}
-
-// TODO: make this as optimized as possible
-export const update_links = (links, link_gfx, ls = line_style) => {
-	const new_ls = merge(line_style, ls);
-	// const link_context = new GraphicsContext({ width: new_ls.lineWidth, color: new_ls.color });
-	link_gfx.clear();
-	links.forEach((link) => { 
-		let { source, target } = link;
-		link_gfx.moveTo(source.x, source.y).lineTo(target.x, target.y);
-	});;
-	link_gfx.stroke({ width: new_ls.lineWidth, color: new_ls.color });
 }
 
 // ------------ Polygon draw methods ------------
@@ -664,7 +644,7 @@ function readTextFile(file, callback) {
 }
 
 class Pixiplex {
-	constructor(width = 250, height = 250, scale = 5.0){
+	constructor(width = 250, height = 250, scale = 2.0){
 		this.width = width
 		this.height = height
 		this.scale = scale
@@ -675,9 +655,9 @@ class Pixiplex {
 		this.links_gfx = null
 		this.polygons_gfx = null;
 
-		this.node_style = node_style;
-		this.line_style = line_style;
-		this.polygon_style = polygon_style;
+		this.node_style = NODE_STYLE; // optional; nodes with track their styles internally
+		this.line_style = LINE_STYLE;	// mandatory, lines are redrawn using this 
+		this.polygon_style = POLYGON_STYLE;
 		
 		// Default force parameters
 		// < name > : { enabled: < boolean >, type: < force type >, params: { < force parameters > } }
@@ -690,6 +670,30 @@ class Pixiplex {
 		// this.sim_params = null // the force simulation + parameters
 	}
 	
+	async default_init(nodes, links){
+		
+		// Pixi & viewport related initializations
+		await this.initialize_application();
+		this.initialize_viewport();
+		this.init_ticker();
+
+		// Rendering & graph related initializations
+		console.log(this);
+		await this.initialize_graph_data(nodes, links);
+		add_items(this.vp, [this.links_gfx]); // add links to viewport
+		add_items(this.vp, this.nodes_gfx);   // add nodes to viewport
+		this.ticker.add((ticker) => {
+			build_links(this.links, this.links_gfx, this.line_style);
+		});
+		this.app.stage.addChild(this.vp)
+		
+		// Runtime initializations
+		this.init_force();
+		this.enable_drag();
+		this.ticker.start();
+		this.center_graph(true);
+	}
+
 	// Should be called once. Creates members: 
 	// - app 
 	// - view
@@ -702,25 +706,32 @@ class Pixiplex {
 		// set_dpi(this.view, 288);
 		// console.log(this.view.width);
 		this.app = new Application();
+		this.pixel_ratio = 2.0 * devicePixelRatio;
+		// const ratio = 1.0;
 		let app_params = {
 			// canvas: this.view,
-			width: this.width,  // NOTE: this is preferred over making own canvas!
-			height: this.height,
+			width: this.width / this.pixel_ratio,  // NOTE: this is preferred over making own canvas!
+			height: this.height / this.pixel_ratio,
 			antialias: true, 
 			backgroundColor: 0xededed, 
-			// resolution: 1.2*devicePixelRatio, 
-			resolution: 1.0,
+			resolution: this.pixel_ratio,  // NOTE: world coordinate calculations are affected by resolution!
+			// resolution: 1.0,
 			sharedTicker: true, 
 			transparent: false,
-			autoResize: false, 
+			autoResize: true, // might be needed for resolution 
 			// resizeTo: this.view,
 			forceCanvas: false, // NOTE: this can force CPU? 
-			autoStart: false // <- note the animation updates won't be immediate! 
+			autoStart: false, // <- note the animation updates won't be immediate! 
+			failIfMajorPerformanceCaveat: true
 		}
 		await this.app.init(assign(app_params, options));
-		// this.app.canvas.width = this.width
-		// this.app.canvas.height = this.height
 		this.view = this.app.canvas
+		this.view.style.width = this.width
+		this.view.style.height = this.height
+		this.view.style.left = 0
+		this.view.style.top = 0
+		// this.view.width = this.width
+		// this.view.height = this.height
 		this.view.onwheel = function(event){ event.preventDefault(); };
 		this.view.onmousewheel = function(event){ event.preventDefault(); };
 	}
@@ -730,9 +741,11 @@ class Pixiplex {
 	// - vp 
 	async initialize_viewport(){
 		if (Object.hasOwn(this, "app")){
-			this.vp = create_viewport(this.app, this.width, this.height);
+			const zoomScale = this.pixel_ratio * this.scale;
+			// const zoomScale = this.scale;
+			this.vp = create_viewport(this.app, this.width, this.height, zoomScale * this.width, zoomScale * this.height);
 			var vp_params = {
-				clampZoom: { minWidth: this.width/this.scale, maxWidth: this.width*this.scale, minHeight: this.height/this.scale, maxHeight: this.height*this.scale }
+				clampZoom: { minWidth: this.width/zoomScale, maxWidth: this.width*zoomScale, minHeight: this.height/zoomScale, maxHeight: this.height*zoomScale }
 			}
 			// Clamp gets rid of panning !.clamp({ direction: 'all'})
 			this.vp.drag({ wheel: false }).wheel(1e-3).clamp({ direction: 'all'}).clampZoom(vp_params.clampZoom).decelerate();
@@ -762,7 +775,7 @@ class Pixiplex {
 			// Populate the links with node graphic references
 			resolve_links(this.nodes_gfx, links);
 			this.links_gfx = generate_links_graphic();
-			build_links(links, this.links_gfx);
+			build_links(links, this.links_gfx, this.line_style);
 		}
 	}
 
@@ -794,10 +807,10 @@ class Pixiplex {
 		this.links = links; 
 		this.nodes = nodes;
 		this.initialize_graphics(this.nodes, this.links)
-		console.log("nodes: ");
-		console.log(this.nodes);
-		console.log("links: ")
-		console.log(this.links)
+		// console.log("nodes: ");
+		// console.log(this.nodes);
+		// console.log("links: ")
+		// console.log(this.links)
 
 		// Update force parameters: TODO add to separate methods
 		assign(this?.force_params?.center?.params, { x: this.width / 2, y: this.height / 2 });
@@ -880,9 +893,11 @@ class Pixiplex {
 		// Apply default forces if not given
 		if (typeof sim_options == 'undefined'){ 
 			console.log("Using default force settings");
+			const c_x = (this.width * this.scale) / 2; 
+			const c_y = (this.height * this.scale) / 2; 
 			apply_sim(this.sim, default_sim_params)
 			apply_force(this.sim, default_sim_params.force)
-			this.sim.force('center').x(this.width / 2).y(this.height / 2);
+			this.sim.force('center').x(c_x).y(c_y);
 			this.sim.force('link').links(this.links);
 		} else {
 			apply_sim(this.sim, sim_options)
@@ -893,9 +908,8 @@ class Pixiplex {
 	};
 
 	enable_force(){
-		let sim = this.sim;
-		this.dispatcher.on("tick.force", () => { 
-			sim.tick(); 
+		this.dispatcher.on("tick.force", () => {
+			this.sim.tick(); 
 		});
 		// Attach dispatchers for force events
 		// force_drag(this.sim)(this.dispatcher);
@@ -906,39 +920,37 @@ class Pixiplex {
 	}
 
 	// TODO: debug centering, experiment w/ different kinds of recenterings
-	center_viewport(){
+	// For w/e reasons, fit and moveCorner seem to apply to different coordinate systems?
+	center_graph(fit = true, x = undefined, y = undefined){
 		const num_nodes = this.nodes_gfx.length;
 		const mean_x = sum(this.nodes_gfx.map((node) => { return node.x; })) / num_nodes;
 		const mean_y = sum(this.nodes_gfx.map((node) => { return node.y; })) / num_nodes;
 		console.log("Graph center: ", mean_x, mean_y);
-		console.log("World center: ", this.width / 2, this.height / 2);
-		// this.vp.fit(this.width, this.height)
 
-		this.vp.fit(true, this.width, this.height);
-		// this.vp.fit();
-		this.sim.stop();
-		// this.sim.force('center', null);
-		// this.sim.force('center').x(this.width / 2).y(this.height / 2);
-		this.sim.force('center').x(0).y(0);
+		this.sim?.stop();
+		const c_x = typeof x !== "undefined" ? x : (this.width * this.scale) / 2;
+		const c_y = typeof y !== "undefined" ? y : (this.height * this.scale) / 2;
 		for (let i = 0; i < this.nodes_gfx.length; i++) {
 			this.nodes_gfx[i].position.x -= mean_x;
 			this.nodes_gfx[i].position.y -= mean_y;
-			// if (Object.hasOwn(this, "sim")){
-			// 	this.sim.nodes()[i].x -= mean_x; // Sync with D3 simulation
-			// 	this.sim.nodes()[i].y -= mean_y; // Sync with D3 simulation
-			// }
-			this.nodes_gfx[i].position.x += this.width / 2;
-			this.nodes_gfx[i].position.y += this.height / 2;
+			this.nodes_gfx[i].position.x += c_x;
+			this.nodes_gfx[i].position.y += c_y;
 		}
-		this.vp.moveCenter(this.width / 2, this.height / 2);
-		this.sim.force('center').x(this.width / 2).y(this.height / 2);
-		this.sim.restart();
-		this.app.renderer.render(this.app.stage);
+		if (fit){
+			// this.vp.fit(true, this.width, this.height);
+			// TODO: shouldn't this be / scale? 
+			this.vp.fit(false, this.width * this.pixel_ratio, this.height * this.pixel_ratio);
+			this.vp.moveCorner(this.width / this.scale, this.height / this.scale); // For w/e reason, moveCenter is bugged
+			// this.vp.moveCenter(c_x, c_y);
+		}
+		this.sim?.force('center').x(c_x).y(c_y);
+		this.sim?.restart();
+		// this.app.renderer.render(this.app.stage);
 	}
 }
 
 
 // export { select }
-// export { map, forOwn, remove, concat, filter, unionBy, unionWith, pullAllBy, pullAllWith, intersectionWith, differenceBy, differenceWith, transform, includes, isEmpty, merge, flatMap}
+export { map, forOwn, remove, concat, filter, unionBy, unionWith, pullAllBy, pullAllWith, intersectionWith, differenceBy, differenceWith, transform, includes, isEmpty, merge, flatMap}
 export { Application, Graphics, GraphicsContext, Polygon, Text, Ticker, Container, Viewport }
 export { Pixiplex }

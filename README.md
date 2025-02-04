@@ -24,6 +24,14 @@ Now, editing files on jupyter lab triggers an automatic update to the notebook v
 
 Unfortunately, opening the notebook via VSCode does works with HMR, but devtools is useless in VSCode. 
 
+For production, use the appropriate minifiers and brotli compression: 
+
+```bash
+npx esbuild --bundle --format=esm --outdir=pixiplex/static src/widget.js src/pixinet.js --tree-shaking=true --minify-identifiers --minify-whitespace --minify-syntax 
+brotli-cli compress pixiplex/static/pixinet.js pixiplex/static/widget.js
+```
+Don't forget to modify the import statement to `pixinet.js.br` 
+
 ### pixiplex JS library 
 
 The pure JS part of the library is developed via incrementally testing features from `pixinet.js` via the test 

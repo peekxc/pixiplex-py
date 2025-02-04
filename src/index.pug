@@ -60,7 +60,7 @@ script(type="module").
 	//- let pn_cont = document.getElementById("pixir_container")
 
 	// Construct the instance 
-	const pp = new pn.Pixiplex(1200, 800);
+	const pp = new pn.Pixiplex(1200, 800, 2.0);
 	window.pp = pp; // debugging
 	//- pp.view.height = 800;
 	
@@ -68,6 +68,7 @@ script(type="module").
 	await pp.initialize_application()
 	pp.initialize_viewport();
 	pp.init_ticker();
+	//- pp.vp.resize(1200, 800)
 	//- pn_cont.appendChild(pp.view);
 	
 	//- console.log("canvas: ", pp.app.renderer.canvas)
@@ -90,20 +91,15 @@ script(type="module").
 	pn.add_items(pp.vp, [pp.links_gfx]); // add links to stage
 	pn.add_items(pp.vp, pp.nodes_gfx);   // add nodes to stage
 	
-	// 
+	// Since nodes are added to stage and merged with node objects, they are need not be rendered every time (just update coordinates)
+	// Links use optimization of drawing a single link graphics, so they need update every tick
 	pp.ticker.add((ticker) => {
-		pn.update_links(pp.links, pp.links_gfx);
+		pn.build_links(pp.links, pp.links_gfx, pp.line_style);
 	});
 	
 	// Finally, add the viewport itself to the stage 
 	pp.app.stage.addChild(pp.vp)
-
-	// Start the animation
-	console.log("beginning ticker");
 	pp.ticker.start();
-
-	console.log("pixiplex: ", pp)
-
 
 	// Add event listeners to buttons	
 	document.getElementById("init_force_button").addEventListener("click", function(){
@@ -117,30 +113,31 @@ script(type="module").
 	});
 
 	document.getElementById("center_button").addEventListener("click", function(){
+		pp.center_graph(true);
 		//- pp.vp.moveCenter(pp.width/2, pp.height/2);
 		//- pp.vp.scaled = 1;
-		let node = new pn.Graphics()
-			.circle(0, 0, 10)
-			.stroke({ width: 3, color: 0xffffff })
-			.fill({ color: 0xff0000, alpha: 1.0})
-		;
-		pp.vp.addChild(node);
+		//- let node = new pn.Graphics()
+		//- 	.circle(0, 0, 10)
+		//- 	.stroke({ width: 3, color: 0xffffff })
+		//- 	.fill({ color: 0xff0000, alpha: 1.0})
+		//- ;
+		//- pp.vp.addChild(node);
 
+		//- //- const c_x = 1800; 
+		//- //- const c_y = 1200;
+		//- const c_x = (pp.width * pp.scale) / 2; 
+		//- const c_y = (pp.height * pp.scale) / 2;
+		//- const br = 2*c_y; // bottom right corner; 
 
-		const c_x = pp.vp.worldWidth / 2; 
-		const c_y = pp.vp.worldHeight / 2;
-
-		const br = 2*c_y; // bottom right corner; 
-
-		let node2 = new pn.Graphics()
-			.circle(c_x, c_y, 10)
-			.stroke({ width: 3, color: 0xffffff })
-			.fill({ color: 0x000000, alpha: 1.0})
-		;
-		pp.vp.addChild(node2);
-		pp.vp.fit(false);
-		//- pp.vp.moveCenter(2*c_x, 2*c_y);
-		pp.vp.moveCorner(2*c_x, 2*c_y);
+		//- let node2 = new pn.Graphics()
+		//- 	.circle(c_x, c_y, 10)
+		//- 	.stroke({ width: 3, color: 0xffffff })
+		//- 	.fill({ color: 0x000000, alpha: 1.0})
+		//- ;
+		//- pp.vp.addChild(node2);
+		//- pp.vp.fit(false, c_x, c_y);
+		//- pp.vp.moveCenter(c_x , c_y);
+		//- pp.vp.moveCorner(2*c_x, 2*c_y);
 		//- pp.center_viewport();
 	});
 
@@ -148,8 +145,8 @@ script(type="module").
 		// Constants for grid settings
 		const n = 100; // horizontal spacing
 		const m = 100; // vertical spacing
-		const rows = Math.floor(pp.app.renderer.height / m);
-		const cols = Math.floor(pp.app.renderer.width / n);
+		const rows = Math.floor(pp.height / m);
+		const cols = Math.floor(pp.width / n);
 
 		// Graphics object to draw grid
 		const graphics = new pn.Graphics();
@@ -158,14 +155,14 @@ script(type="module").
 		// Draw horizontal grid lines
 		for (let i = 0; i <= rows; i++) {
 			graphics.moveTo(0, i * m);
-			graphics.lineTo(pp.app.renderer.width, i * m);
+			graphics.lineTo(pp.width, i * m);
 			graphics.stroke({ width: 2, color: 0x000000 });
 		}
 
 		// Draw vertical grid lines
 		for (let j = 0; j <= cols; j++) {
 			graphics.moveTo(j * n, 0);
-			graphics.lineTo(j * n, pp.app.renderer.height);
+			graphics.lineTo(j * n, pp.height);
 			graphics.stroke({ width: 2, color: 0x000000 });
 		}
 		for (let i = 0; i <= rows; i++) {
@@ -176,6 +173,18 @@ script(type="module").
 				pp.vp.addChild(text);
 			}
 		}
+
+		// Draw origin 
+		//- const c_x = pp.vp.worldWidth / 2;
+		//- const c_y = pp.vp.worldHeight / 2;
+		const c_x = (pp.width * pp.scale) / 2;
+		const c_y = (pp.height * pp.scale) / 2;
+		let origin = new pn.Graphics()
+			.circle(c_x, c_y, 10)
+			.stroke({ width: 3, color: 0xffffff })
+			.fill({ color: 0x00ff00, alpha: 1.0})
+		;
+		pp.vp.addChild(origin);
 	})
 	
 
@@ -191,76 +200,78 @@ script(type="module").
 	
 	document.getElementById("change_node_color_button").addEventListener("click", function(){
 		console.log("changing node color");
-		pp.node_style.color = 0xFF7518;
-		pp.node_style.radius = 8;
-		pn.build_nodes(pp.nodes_gfx, pp.node_style);
+		let ns = pn.NODE_STYLE;
+		ns.color = 0xFF7518;
+		ns.radius = 8;
+		pn.build_nodes(pp.nodes_gfx, ns);
 	});
 
 	document.getElementById("change_node_colors_button").addEventListener("click", function(){
 		console.log("changing node colors");
-		const ns = pp.node_style;
-		pp.node_style = _.map(pp.nodes, (node, i) => ({ 
-			...ns, 
-			color: i % 2 == 0 ? 0xff7518 : 0x650A5A, 
-		}));
-		//- console.log(pp.node_style);
-		pn.build_nodes(pp.nodes_gfx, pp.node_style)
+		const ns = pp.nodes.map((node, i) => ({ ...pn.NODE_STYLE, color: i % 2 == 0 ? 0xff7518 : 0x650A5A }));
+		console.log(ns)
+		pn.build_nodes(pp.nodes_gfx, ns)
 	});
 
 	document.getElementById("change_node_radius_button").addEventListener("click", function(){
 		console.log("changing node radius");
 		//- console.log(pp.nodes_gfx.slice(0, pp.nodes.length / 2))
-		pn.build_nodes(pp.nodes_gfx.slice(0, pp.nodes.length / 2), { radius: 10 });
-		pn.build_nodes(pp.nodes_gfx.slice(pp.nodes.length / 2), { radius: 5 });
+		pn.build_nodes(pp.nodes_gfx.slice(0, pp.nodes.length / 2), { ...pn.NODE_STYLE, radius: 5 });
+		pn.build_nodes(pp.nodes_gfx.slice(pp.nodes.length / 2), { ...pn.NODE_STYLE, radius: 10 });
 	});
-
+	
+	// NOTE: don't use _.merge as it mutates the object
 	document.getElementById("change_node_radii_button").addEventListener("click", function(){
 		console.log("changing node radii");
-		pn.build_nodes(pp.nodes_gfx, { radius: 10 })
+		pn.build_nodes(pp.nodes_gfx, { ...pn.NODE_STYLE, radius: 10 });
 	});
 
+	// NOTE: must track the link properties in the pixiplex object to keep them updated
 	document.getElementById("change_link_width_button").addEventListener("click", function(){
 		console.log("changing link width");
-		//- pn.build_nodes([pp.link_gfx], { radius: 10 })
+		pp.line_style = { ...pn.LINE_STYLE, lineWidth: 3 };
+		pn.build_links(pp.links, pp.links_gfx, pp.line_style);
 	});
 
+	// NOTE: must track the link properties in the pixiplex object to keep them updated
 	document.getElementById("change_link_color_button").addEventListener("click", function(){
-		console.log("changing node radii");
-		//- pn.build_nodes(pp.nodes_gfx, { radius: 10 })
+		console.log("changing link color");
+		pp.line_style =  {...pn.LINE_STYLE, color: 0x00ff88 }
+		pn.build_links(pp.links, pp.links_gfx, pp.line_style);
 	});
 
-	//- // Start lasso on double-click 
+	// Start lasso on double-click 
 	//- let lasso_obj = pn.enable_lasso("pixir_container");
 	//- lasso_obj.on("selected", function(nodes){
 	//- 		// Highlight selected nodes 
-	//- 		//- if (nodes) { 
-	//- 		//- 	pn.draw_nodes(nodes, { color: 0xFFA500 });
+	//- 		if (nodes) { 
+	//- 			pn.draw_nodes(nodes, { color: 0xFFA500 });
 				
-	//- 		//- 	let node_container = pn.group_items(nodes);
-	//- 		//- 	pn.stage_items(vp, [node_container]);
-	//- 		//- 	let node_group = pn.enable_drag_container(node_container);
-	//- 		//- 	console.log(node_group);
-	//- 		//- 	pn.enable_drag(node_group).on("dragging", function(coords){
-	//- 		//- 		console.log(this);
-	//- 		//- 		this.x = coords.x; this.y = coords.y; 
-	//- 		//- 		this.updateTransform();
-	//- 		//- 	});
+	//- 			let node_container = pn.group_items(nodes);
+	//- 			pn.stage_items(vp, [node_container]);
+	//- 			let node_group = pn.enable_drag_container(node_container);
+	//- 			console.log(node_group);
+	//- 			pn.enable_drag(node_group).on("dragging", function(coords){
+	//- 				console.log(this);
+	//- 				this.x = coords.x; this.y = coords.y; 
+	//- 				this.updateTransform();
+	//- 			});
 
-	//- 		//- 	//pn.enable_drag(node_group)
-	//- 		//- };
+	//- 			//pn.enable_drag(node_group)
+	//- 		};
 	//- 		// Drag -- or -- do something else w/ selected nodes 
 	//- 		// unhighlight nodes when finished  
 	//- });
 
 
-	//- document.getElementById("lasso_button").addEventListener("click", function(){
-	//- 	console.log("lasso clicked")
-	//- 	console.log(lasso_obj);
-	//- 	console.log(nodes);
-	//- 	lasso_obj.call("start", this, nodes);
-	//- 	// var interact_svg = pn.enable_lasso("pixir_container");
-	//- 	// var selected_nodes = pn.start_lasso(nodes, interact_svg);
-	//- });
+	document.getElementById("lasso_button").addEventListener("click", function(){
+		console.log("lasso clicked")
+		//- console.log(lasso_obj);
+		//- console.log(pp.nodes);
+		//- lasso_obj.call("start", this, nodes);
+		//- var interact_svg = pn.enable_lasso(pp.app.canvas);
+		//- var selected_nodes = pn.start_lasso(pp.nodes, interact_svg);
+	});
 
 	//- document.getElementById("insert_node_button").addEventListener("click", function(){
 	//- 	console.log("inserting new node");
@@ -320,31 +331,20 @@ script(type="module").
 	//- document.getElementById("remove_polygon_button").addEventListener("click", function(){
 	//- });
 
-	
-	//- document.getElementById("change_node_radius_button").addEventListener("click", function(){
-	//- 	pn.draw_nodes(nodes, { radius: 2 });
-	//- });
-	//- document.getElementById("change_link_width").addEventListener("click", function(){
-	//- 	pn.draw_links(links, links_gfx, { lineWidth: 5 })
-	//- });
-	//- document.getElementById("change_link_color").addEventListener("click", function(){
-	//- 	console.log("Changing link color");
-	//- 	pn.draw_links(links, links_gfx, { color: 0xff0000 })
-	//- });
-
 	document.getElementById("enable_weak_tree").addEventListener("click", function(){
 		pp.dispatcher.on("tick", function(e){
 			//- links_gfx.clear();
 			//- pn.draw_links(links, links_gfx);	
 
-			// Form weak tree by push targets downward
+			// Form weak tree by pushing targets downward
 			let k = 10 * pp.sim.alpha();
 			pp.links.forEach((link) => { 
 				link.source.y -= k;
 				link.target.y += k;  
 			});
-			sim.tick();
+			pp.sim.tick();
 		});
+		pp.sim?.alpha(0.35); // re-heat
 	});
 
 	//- document.getElementById("add_text").addEventListener("click", function(){

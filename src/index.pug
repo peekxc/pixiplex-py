@@ -175,10 +175,10 @@ script(type="module").
 		}
 
 		// Draw origin 
-		//- const c_x = pp.vp.worldWidth / 2;
-		//- const c_y = pp.vp.worldHeight / 2;
-		const c_x = (pp.width * pp.scale) / 2;
-		const c_y = (pp.height * pp.scale) / 2;
+		const c_x = pp.vp.worldWidth / 2;
+		const c_y = pp.vp.worldHeight / 2;
+		//- const c_x = (pp.width * pp.scale) / 2;
+		//- const c_y = (pp.height * pp.scale) / 2;
 		let origin = new pn.Graphics()
 			.circle(c_x, c_y, 10)
 			.stroke({ width: 3, color: 0xffffff })

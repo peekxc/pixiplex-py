@@ -15,10 +15,8 @@ import * as d3_force from 'd3-force';
 import { json } from 'd3-fetch';
 // import * as EventEmitter from 'eventemitter3';
 
-import { AbstractRenderer } from 'pixi.js';
-
 // Can also be passed into the renderer directly e.g `autoDetectRenderer({resolution: 1})`
-AbstractRenderer.defaultOptions.resolution = 5.0;
+// AbstractRenderer.defaultOptions.resolution = 5.0;
 
 export const combinations = (n, k) => {
   const result= [];
@@ -706,22 +704,23 @@ class Pixiplex {
 		// set_dpi(this.view, 288);
 		// console.log(this.view.width);
 		this.app = new Application();
-		this.pixel_ratio = 2.0 * devicePixelRatio;
+		this.pixel_ratio = devicePixelRatio;
 		// const ratio = 1.0;
 		let app_params = {
 			// canvas: this.view,
-			width: this.width / this.pixel_ratio,  // NOTE: this is preferred over making own canvas!
-			height: this.height / this.pixel_ratio,
+			width: this.width,  // NOTE: this is preferred over making own canvas!
+			height: this.height,
 			antialias: true, 
 			backgroundColor: 0xededed, 
 			resolution: this.pixel_ratio,  // NOTE: world coordinate calculations are affected by resolution!
 			// resolution: 1.0,
-			sharedTicker: true, 
-			transparent: false,
-			autoResize: true, // might be needed for resolution 
+			sharedTicker: true, // 
+			transparent: true,
+			autoResize: false, // might be needed for resolution 
 			// resizeTo: this.view,
 			forceCanvas: false, // NOTE: this can force CPU? 
 			autoStart: false, // <- note the animation updates won't be immediate! 
+			autoDensity: true,  // this acts as autoResize
 			failIfMajorPerformanceCaveat: true
 		}
 		await this.app.init(assign(app_params, options));
@@ -741,14 +740,14 @@ class Pixiplex {
 	// - vp 
 	async initialize_viewport(){
 		if (Object.hasOwn(this, "app")){
-			const zoomScale = this.pixel_ratio * this.scale;
-			// const zoomScale = this.scale;
+			// const zoomScale = this.pixel_ratio * this.scale;
+			const zoomScale = this.scale;
 			this.vp = create_viewport(this.app, this.width, this.height, zoomScale * this.width, zoomScale * this.height);
 			var vp_params = {
 				clampZoom: { minWidth: this.width/zoomScale, maxWidth: this.width*zoomScale, minHeight: this.height/zoomScale, maxHeight: this.height*zoomScale }
 			}
 			// Clamp gets rid of panning !.clamp({ direction: 'all'})
-			this.vp.drag({ wheel: false }).wheel(1e-3).clamp({ direction: 'all'}).clampZoom(vp_params.clampZoom).decelerate();
+			this.vp.drag({ wheel: false }).pinch().wheel(1e-3).clamp({ direction: 'all'}).clampZoom(vp_params.clampZoom).decelerate();
 			// this.vp.drag().wheel(1e-3).clamp({ direction: 'all'}).clampZoom(vp_params.clampZoom).decelerate();		
 			// this.app.stage.addChild(this.vp);
 		}
@@ -903,7 +902,6 @@ class Pixiplex {
 			apply_sim(this.sim, sim_options)
 			apply_force(this.sim, sim_options.force)
 		}
-
 		this.enable_force();
 	};
 
@@ -928,8 +926,8 @@ class Pixiplex {
 		console.log("Graph center: ", mean_x, mean_y);
 
 		this.sim?.stop();
-		const c_x = typeof x !== "undefined" ? x : (this.width * this.scale) / 2;
-		const c_y = typeof y !== "undefined" ? y : (this.height * this.scale) / 2;
+		const c_x = typeof x !== "undefined" ? x : (this.vp.worldWidth) / 2;
+		const c_y = typeof y !== "undefined" ? y : (this.vp.worldHeight) / 2;
 		for (let i = 0; i < this.nodes_gfx.length; i++) {
 			this.nodes_gfx[i].position.x -= mean_x;
 			this.nodes_gfx[i].position.y -= mean_y;
@@ -937,11 +935,9 @@ class Pixiplex {
 			this.nodes_gfx[i].position.y += c_y;
 		}
 		if (fit){
-			// this.vp.fit(true, this.width, this.height);
-			// TODO: shouldn't this be / scale? 
-			this.vp.fit(false, this.width * this.pixel_ratio, this.height * this.pixel_ratio);
-			this.vp.moveCorner(this.width / this.scale, this.height / this.scale); // For w/e reason, moveCenter is bugged
-			// this.vp.moveCenter(c_x, c_y);
+			this.vp.fit(false, this.width, this.height);
+			// this.vp.moveCorner(this.width / this.scale, this.height / this.scale); // For w/e reason, moveCenter is bugged
+			this.vp.moveCenter(c_x, c_y);
 		}
 		this.sim?.force('center').x(c_x).y(c_y);
 		this.sim?.restart();

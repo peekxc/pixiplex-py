@@ -5,6 +5,7 @@ head
 	meta(name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no")
 	meta(name='description' content='')
 	meta(name='theme-color' content='#000000')
+	script(src="https://cdn.jsdelivr.net/pyodide/v0.27.2/full/pyodide.js")
 body
 	button(id="center_button" type="button") Center
 	button(id="draw_grid_button" type="button") Draw Grid
@@ -22,14 +23,16 @@ body
 		button(id="change_node_radii_button" type="button") Change node radii
 		button(id="change_link_width_button" type="button") Change link width
 		button(id="change_link_color_button" type="button") Change link color
+	div	
+		button(id="add_node_text" type="button") Add node text
+		button(id="add_edge_text" type="button") Add edge text
 	div 
 		button(id="insert_node_button" type="button") Insert node
 		button(id="remove_node_button" type="button") Remove node
 		button(id="insert_link_button" type="button") Insert link
 		button(id="remove_link_button" type="button") Remove link
 		button(id="insert_polygon_button" type="button") Insert polygon
-		button(id="remove_polygon_button" type="button") Remove polygon
-		button(id="add_text" type="button") Add node text 
+		button(id="remove_polygon_button" type="button") Remove polygon 
 	div 
 		button(id="lasso_button" type="button") Do Lasso
 		button(id="enable_weak_tree" type="button") Enable weak tree
@@ -55,7 +58,8 @@ script(type="module").
 	//- console.log("pixinet module: ", pn)
 	console.log("Pixel ratio: " + devicePixelRatio)
 	window.pn = pn
-	
+
+	//- window.pyodide = await loadPyodide();
 	// Setup bordered container to house the canvas for debugging
 	//- let pn_cont = document.getElementById("pixir_container")
 

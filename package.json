@@ -6,10 +6,8 @@
 		"serve": "npx esbuild src/widget.js --bundle --servedir=pixiplex/static --outdir=pixiplex/static"
 	},
 	"dependencies": {
-		"pixi.js": "^8.6.6",
 		"@pixi/events": "^7.4.2",
-		"pixi-viewport": "^6.0.3",
-		"lodash-es": "^4.17.21",
+		"brotli-cli": "^2.1.0",
 		"d3": "^7.9.0",
 		"d3-dispatch": "^3.0.1",
 		"d3-fetch": "^3.0.1",
@@ -17,9 +15,12 @@
 		"d3-polygon": "^3.0.1",
 		"d3-scale": "^4.0.2",
 		"d3-selection": "^3.0.0",
+		"lodash-es": "^4.17.21",
+		"pixi-viewport": "^6.0.3",
+		"pixi.js": "^8.6.6",
 		"pug": "^3.0.3",
 		"pug-cli": "^1.0.0-alpha6",
-		"brotli-cli": "^2.1.0"
+		"pyodide": "^0.27.2"
 	},
 	"devDependencies": {},
 	"type": "module"

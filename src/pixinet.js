@@ -14,6 +14,7 @@ import { forceCenter, forceCollide, forceLink, forceManyBody, forceRadial, force
 import * as d3_force from 'd3-force';
 import { json } from 'd3-fetch';
 // import * as EventEmitter from 'eventemitter3';
+// import { loadPyodide } from 'pyodide';
 
 // Can also be passed into the renderer directly e.g `autoDetectRenderer({resolution: 1})`
 // AbstractRenderer.defaultOptions.resolution = 5.0;
@@ -218,19 +219,6 @@ export const generate_links_graphic = () => {
 export const generate_polygon_graphics = (polygons) => {
 	return _.map(polygons, (polygon) => { polygon.gfx = new Graphics(); return polygon; });
 }
-
-// Simple function to color nodes w/ given style
-// Stroke: https://pixijs.com/8.x/guides/migrations/v8
-export const build_node = (node, ns = node_style) => {
-	node.clear();
-	node
-		.circle(0, 0, ns.radius)
-		.stroke({ width: ns.lineStyle.size, color: ns.lineStyle.color })
-		.fill({ color: ns.color, alpha: ns.alpha})
-		;
-	return(node)
-}
-
 // lineStyle: { size: 1.5, color: 0xFFFFFF },
 // color: 0x650A5A,
 // radius: 6,
@@ -451,15 +439,6 @@ export const remove_nodes = (node_ids, nodes, links, stage) => {
 
 // ---- Access and setting node/link properties ----
 
-// Update node.gfx positions w/ force node coordinates
-export const update_node_coords = (nodes) => {
-	let i, n = nodes.length;
-	for (i = 0; i < n; ++i) {
-		nodes[i].gfx.x = nodes[i].x;
-		nodes[i].gfx.y = nodes[i].y;
-	}
-}
-
 export const make_group = (nodes) => {
 	let container = new Container();
 	nodes.forEach((node) => { container.addChild(node); });
@@ -469,34 +448,6 @@ export const make_group = (nodes) => {
 
 // Creates a new d3 force simulation 
 export const force_sim = () => { return forceSimulation() }
-
-// https://stackoverflow.com/questions/14488849/higher-dpi-graphics-with-html5-canvas
-export const set_dpi = (canvas, dpi) => {
-	// Set up CSS size.
-	canvas.style.width = canvas.style.width || canvas.width + 'px';
-	canvas.style.height = canvas.style.height || canvas.height + 'px';
-
-	// Get size information.
-	var scaleFactor = dpi / 96;
-	var width = parseFloat(canvas.style.width);
-	var height = parseFloat(canvas.style.height);
-
-	// Backup the canvas contents.
-	var oldScale = canvas.width / width;
-	var backupScale = scaleFactor / oldScale;
-	var backup = canvas.cloneNode(false);
-	backup.getContext('2d').drawImage(canvas, 0, 0);
-
-	// Resize the canvas.
-	var ctx = canvas.getContext('2d');
-	canvas.width = Math.ceil(width * scaleFactor);
-	canvas.height = Math.ceil(height * scaleFactor);
-
-	// Redraw the canvas image and scale future draws.
-	ctx.setTransform(backupScale, 0, 0, backupScale, 0, 0);
-	ctx.drawImage(backup, 0, 0);
-	ctx.setTransform(scaleFactor, 0, 0, scaleFactor, 0, 0);
-}
 
 // Applies default settings to force simulation
 function default_force_settings(sim, app, nodes, links){
@@ -950,3 +901,4 @@ class Pixiplex {
 export { map, forOwn, remove, concat, filter, unionBy, unionWith, pullAllBy, pullAllWith, intersectionWith, differenceBy, differenceWith, transform, includes, isEmpty, merge, flatMap}
 export { Application, Graphics, GraphicsContext, Polygon, Text, Ticker, Container, Viewport }
 export { Pixiplex }
+// export { loadPyodide }

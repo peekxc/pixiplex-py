@@ -1,16 +1,10 @@
-// import "./widget.css";
-// import { Application, Sprite, Assets } from 'pixi.js';
-// import { selection, select } from 'd3-selection';
-// import { scaleLinear } from 'd3-scale';
-// import { polygonContains } from 'd3-polygon';
-// import { dispatch } from 'd3-dispatch';
-// import { forOwn, map, remove, concat, filter, unionBy, pullAllBy, pullAllWith, intersectionWith, unionWith, differenceBy, differenceWith, transform, includes, isFunction, isEmpty, merge, flatMap } from 'lodash-es';
-// import { forceCenter, forceCollide, forceLink, forceManyBody, forceRadial, forceSimulation, forceX, forceY } from 'd3-force';
-// import * as d3_force from 'd3-force';
-// import * as EventEmitter from 'eventemitter3';
-// import 'src/pixinet.js';
-import { mode } from "d3";
 import * as pn from "./pixinet.js"
+
+function sync_coordinates(model, pp){
+	model.set('_x', pp.nodes.map((node) => node.x));
+	model.set('_y', pp.nodes.map((node) => node.y));
+	model.save_changes()
+}
 
 async function initialize({ model }){
 	console.log("--- Initializing widget ---")
@@ -41,6 +35,9 @@ async function render({ model, el }) {
 	await this.pp.default_init(nodes, links);	
 	window.pp = this.pp;
 	el.appendChild(this.pp.app.canvas);
+
+	// Sync coordinates when the simulation ends
+	this.pp.sim?.on("end", () => sync_coordinates(model, this.pp));
 
 	// Traitlet attribute setter callbacks
 	model.on("change:node_color", () => {

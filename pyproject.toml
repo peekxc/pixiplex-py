@@ -5,19 +5,26 @@ build-backend = "hatchling.build"
 [project]
 name = "pixiplex"
 version = "0.0.1"
-dependencies = ["anywidget"]
 readme = "README.md"
+dependencies = [
+	"anywidget"
+]
 
 [project.optional-dependencies]
 dev = ["watchfiles", "jupyterlab"]
 
-# automatically add the dev feature to the default env (e.g., hatch shell)
-[tool.hatch.envs.default]
-features = ["dev"]
+[tool.hatch.build.targets.sdist]
+packages = ["src/pixiplex"]
 
-[tool.hatch.build]
-only-packages = true
-artifacts = ["pixiplex/static/*"]
+[tool.hatch.build.targets.wheel]
+packages = ["src/pixiplex"]
+
+[template.plugins.default]
+src-layout = true
+
+# [tool.hatch.build]
+# only-packages = true
+# artifacts = ["pixiplex/static/*"]
 
 # [tool.hatch.build.hooks.jupyter-builder]
 # # build-function = "hatch_jupyter_builder.npm_builder"

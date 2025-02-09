@@ -9,7 +9,7 @@ import { scaleLinear } from 'd3-scale';
 import { polygonContains } from 'd3-polygon';
 import lasso from './lasso.js';
 import { dispatch } from 'd3-dispatch';
-import { assign, forOwn, map, remove, concat, filter, unionBy, pullAllBy, pullAllWith, intersectionWith, unionWith, differenceBy, differenceWith, transform, includes, isFunction, isEmpty, merge, flatMap, sum } from 'lodash-es';
+import { assign, forOwn, map, remove, concat, filter, unionBy, pullAllBy, pullAllWith, intersectionWith, unionWith, differenceBy, differenceWith, transform, includes, isFunction, isEmpty, merge, flatMap, sum, fromPairs, sortedIndexBy } from 'lodash-es';
 import { forceCenter, forceCollide, forceLink, forceManyBody, forceRadial, forceSimulation, forceX, forceY } from 'd3-force';
 import * as d3_force from 'd3-force';
 import { json } from 'd3-fetch';
@@ -77,6 +77,34 @@ export const default_sim_params = {
 	}
 };
 
+const FORCE_PARAMS = {
+  forceManyBody: ['strength', 'theta', 'distanceMin', 'distanceMax'],
+  forceLink: ['distance', 'strength', 'iterations'],
+  forceCenter: ['x', 'y'],
+  forceCollide: ['radius', 'strength', 'iterations'],
+  forceX: ['strength', 'x'],
+  forceY: ['strength', 'y']
+};
+
+// Serializes the forces of a d3-force simulation or a given set of forces
+// This is the opposite of the apply force, i.e. apply_force(sim, serialize_force(sim, ...)) is the identity 
+export const serialize_force = (sim, force_names, force_types) => {
+	const _force_params = force_names.map((force_name, i) => {
+		const force_type = force_types[i];
+		const force = sim.force(force_name);
+		const params = FORCE_PARAMS[force_type] || [];
+		const serialized_params = _.reduce(params, (result, param) => { 
+			result[param] = force[param]();
+			return result; 
+		}, {});
+		return [force_name, { enabled: true, type: force_type, params : serialized_params }];
+	});
+	return fromPairs(_force_params);
+	// return { type: force_type, params: force_params };
+	// .fromPairs()
+	// .value();
+}
+
 // Given a node, export its node style
 export const current_ns = (node) => {
 	let gd = node.graphicsData[0]
@@ -101,6 +129,8 @@ export const default_ns = (node) => {
 	return res;
 }
 
+
+
 // Remove unused keys
 export const clean = (obj) => {
   Object.keys(obj).forEach((key) => (obj[key] == null) && delete obj[key]);
@@ -121,7 +151,7 @@ export const apply_sim = (sim, params) => {
 // Meta-function for applying force settings on a d3 force simulation object
 export const apply_force = (sim, params) => {
 	forOwn(params, function(settings, forcename){
-		if (settings.enabled){
+		if (!Object.hasOwn(settings, "enabled") || settings.enabled){
 			sim.force(forcename, d3_force[settings.type]()); // set up default force
 			forOwn(settings.params, function(param_value, param_name){
 				console.log(forcename.toString() + ": " + param_name.toString() + " = " + param_value.toString())
@@ -479,13 +509,22 @@ export const enable_resize = (app, vp = null) => {
 }
 
 // Resolves link source and target nodes, replacing .source and .target integer ids with node graphics
+// TODO: rempa node indices to 0...n-1, then use log(n) search on the link resolution
 export const resolve_links = (nodes, links) => {
+	const id_map = fromPairs(nodes.map((node, i) => { return [node.id, i]; }));
 	links.forEach((link) => {
 		if (!(link.source instanceof Graphics)){
-			link.source = nodes.find((node) => { return node.id == link.source });
+			link.source = nodes[id_map[link.source]];
+			// link.source = nodes.find((node) => { return node.id == link.source });
+			// const ii = nodes[sortedIndexBy(nodes, link.source, (node) => { return node.id })];
+			// const jj = nodes.find((node) => { return node.id == link.source });
+			// console.log(ii == jj);
+			// link.source = nodes[sortedIndexBy(nodes, link.source, (node) => { return node.id })];
 		}
 		if (!(link.target instanceof Graphics)){
-			link.target = nodes.find((node) => { return node.id == link.target });
+			link.target = nodes[id_map[link.target]];
+			// link.target = nodes.find((node) => { return node.id == link.target });
+			// link.target = nodes[sortedIndexBy(nodes, link.target, (node) => { return node.id })];
 		}
 	});
 }
@@ -641,6 +680,8 @@ class Pixiplex {
 		this.enable_drag();
 		this.ticker.start();
 		this.center_graph(true);
+
+		this.force_params = serialize_force(this.sim, )
 	}
 
 	// Should be called once. Creates members: 

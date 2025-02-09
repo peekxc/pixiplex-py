@@ -21,3 +21,7 @@
 .pixiplex button:hover {
 	transform: scale(1.05);
 }
+
+.cell-output-ipywidget-background {
+	background: transparent !important;
+}

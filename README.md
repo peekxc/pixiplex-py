@@ -14,10 +14,10 @@ Use Jupyter lab w/ devtools (option + cmd + I).
 jupyter lab 
 ```
 
-Point the source of the jupyter widget to the `pixiplex/static/*` files, *NOT* the src files. Then compile with: 
+Point the source of the jupyter widget to the `src/pixiplex/static/*` files, *NOT* the src files. Then compile with: 
 
 ```bash
-npx esbuild --bundle --format=esm --outdir=pixiplex/static src/widget.js src/pixinet.js --watch
+npx esbuild --bundle --format=esm --outdir=src/pixiplex/static src/pixiplex/widget.js src/pixiplex/pixinet.js --watch
 ```
 
 Now, editing files on jupyter lab triggers an automatic update to the notebook via HMR, and you can use devtools. 
@@ -32,14 +32,14 @@ graph in `index.pug`. To develop the JS component, the workflow is:
 1. Setup watchers for `index.pug` and `pixinet.js` via pug and esbuild, respectively. 
 
 ```bash
-npx pug src/index.pug --out pixiplex/static --watch
-npx esbuild --bundle --format=esm --outdir=pixiplex/static src/widget.js src/pixinet.js --watch
+npx pug src/pixiplex/index.pug --out src/pixiplex/static --watch
+npx esbuild --bundle --format=esm --outdir=src/pixiplex/static src/pixiplex/widget.js src/pixiplex/pixinet.js --watch
 ```
 
-2. Run any http server from the `pixiplex/static` root level
+2. Run any http server from the `src/pixiplex/static` root level
 
 ```bash
-(pixiplex-py)$ http-server pixiplex/static
+(pixiplex-py)$ http-server src/pixiplex/static
 ```
 
 This will serve the output `index.html` file. Tweak `src/pixinet.js` or `index.pug` incrementally until desired functionality is verified. 
@@ -50,6 +50,6 @@ This will serve the output `index.html` file. Tweak `src/pixinet.js` or `index.p
 For distributing the library, use the appropriate minifiers and compression: 
 
 ```bash
-npx esbuild --bundle --format=esm --outdir=pixiplex/static src/widget.js src/pixinet.js --tree-shaking=true --minify-identifiers --minify-whitespace --minify-syntax 
-brotli-cli compress pixiplex/static/pixinet.js pixiplex/static/widget.js
+npx esbuild --bundle --format=esm --outdir=src/pixiplex/static src/pixiplex/widget.js src/pixiplex/pixinet.js --tree-shaking=true --minify-identifiers --minify-whitespace --minify-syntax 
+brotli-cli compress src/pixiplex/static/pixinet.js src/pixiplex/static/widget.js
 ```

@@ -9,7 +9,7 @@ import { scaleLinear } from 'd3-scale';
 import { polygonContains } from 'd3-polygon';
 import lasso from './lasso.js';
 import { dispatch } from 'd3-dispatch';
-import { assign, forOwn, map, remove, concat, filter, unionBy, pullAllBy, pullAllWith, intersectionWith, unionWith, differenceBy, differenceWith, transform, includes, isFunction, isEmpty, merge, flatMap, sum, fromPairs, sortedIndexBy } from 'lodash-es';
+import { assign, forOwn, map, remove, concat, filter, unionBy, pullAllBy, pullAllWith, intersectionWith, unionWith, differenceBy, differenceWith, transform, includes, isFunction, isEmpty, merge, flatMap, sum, fromPairs, reduce, sortedIndexBy } from 'lodash-es';
 import { forceCenter, forceCollide, forceLink, forceManyBody, forceRadial, forceSimulation, forceX, forceY } from 'd3-force';
 import * as d3_force from 'd3-force';
 import { json } from 'd3-fetch';
@@ -61,21 +61,21 @@ export const POLYGON_STYLE = {
 }
 
 // Parameter for all forces
-let _default_link_params = { 
+let _default_link_params = {
 	distance: 30,
 	iterations: 1, 
 	id: function(d){ return d.id; } 
 };
-let _default_manybody_params = { strength: function() { return -30 }, distanceMin: 1, distanceMax: Infinity }
-let _default_center_params = { x: 0, y: 0 }
-export const default_sim_params = {
-	alpha: 1, 
-	force: { // < name > : { enabled: < boolean >, type: < force type >, params: { < force parameters > } }
-	  charge: { enabled: true, type: "forceManyBody", params: _default_manybody_params },
-	  link: { enabled: true, type: "forceLink", params: _default_link_params },
-	  center: { enabled: true, type: "forceCenter", params: _default_center_params }
-	}
-};
+// let _default_manybody_params = { strength: function() { return -30 }, distanceMin: 1, distanceMax: Infinity }
+// let _default_center_params = { x: 0, y: 0 }
+// export const default_sim_params = {
+// 	alpha: 1, 
+// 	force: { // < name > : { enabled: < boolean >, type: < force type >, params: { < force parameters > } }
+// 	  charge: { enabled: true, type: "forceManyBody", params: _default_manybody_params },
+// 	  spring: { enabled: true, type: "forceLink", params: _default_link_params },
+// 	  center: { enabled: true, type: "forceCenter", params: _default_center_params }
+// 	}
+// };
 
 const FORCE_PARAMS = {
   forceManyBody: ['strength', 'theta', 'distanceMin', 'distanceMax'],
@@ -88,12 +88,14 @@ const FORCE_PARAMS = {
 
 // Serializes the forces of a d3-force simulation or a given set of forces
 // This is the opposite of the apply force, i.e. apply_force(sim, serialize_force(sim, ...)) is the identity 
+// * @param  {[type]} 
 export const serialize_force = (sim, force_names, force_types) => {
 	const _force_params = force_names.map((force_name, i) => {
 		const force_type = force_types[i];
 		const force = sim.force(force_name);
 		const params = FORCE_PARAMS[force_type] || [];
-		const serialized_params = _.reduce(params, (result, param) => { 
+		// console.log(force_name, force_type, params);
+		const serialized_params = reduce(params, (result, param) => { 
 			result[param] = force[param]();
 			return result; 
 		}, {});
@@ -129,8 +131,6 @@ export const default_ns = (node) => {
 	return res;
 }
 
-
-
 // Remove unused keys
 export const clean = (obj) => {
   Object.keys(obj).forEach((key) => (obj[key] == null) && delete obj[key]);
@@ -148,19 +148,15 @@ export const apply_sim = (sim, params) => {
 	return sim
 }
 
-// Meta-function for applying force settings on a d3 force simulation object
-export const apply_force = (sim, params) => {
-	forOwn(params, function(settings, forcename){
-		if (!Object.hasOwn(settings, "enabled") || settings.enabled){
-			sim.force(forcename, d3_force[settings.type]()); // set up default force
-			forOwn(settings.params, function(param_value, param_name){
-				console.log(forcename.toString() + ": " + param_name.toString() + " = " + param_value.toString())
-				sim.force(forcename)[param_name](param_value);
-			})
-		}
-	})
-	return sim
-}
+
+// Update force parameters: TODO add to separate methods
+// assign(this?.force_params?.center?.params, { x: this.width / 2, y: this.height / 2 });
+// assign(this?.force_params?.spring?.params, { links: this.links });
+// export const async load_json_graph(json_path){
+// 	return json(json_path).then((graph) => {
+// 		[graph.nodes, graph.links]; 
+// 	});
+// }
 
 // Scales node .x, .y coordinates to the given width w and height h.
 // If nodes have no intrinsic coordinates, they are given random positions.
@@ -191,7 +187,7 @@ export const register_ticker = (app, stage) => {
 	ticker.maxFPS = 30; // TODO: make configurable
 	ticker.add((ticker) => {
 		dispatcher.call("tick", this);
-	})
+	});
 	// function animate(time){
 	// 	ticker.update(time);
 	// 	app.renderer.render(stage);
@@ -480,23 +476,6 @@ export const make_group = (nodes) => {
 export const force_sim = () => { return forceSimulation() }
 
 // Applies default settings to force simulation
-function default_force_settings(sim, app, nodes, links){
-	// console.log("arg len: "+arguments.length);
-	// console.log(sim);
-	if (arguments.length < 4){
-		return default_sim_params;
-	} else {
-		const parent = app.canvas.parentNode;
-		const width = parent.clientWidth, height = parent.clientHeight;
-		let center = [ width/2, height/2 ]
-		sim.nodes(nodes)
-		apply_sim(sim, default_sim_params)
-		apply_force(sim, default_sim_params.force)
-		sim.force('center').x(center[0]).y(center[1]);
-		sim.force('link').links(links);
-	}
-}
-
 export const enable_resize = (app, vp = null) => {
 	app.renderer.autoResize = true;
 	const parent = app.canvas.parentNode; // view => canvas in v8
@@ -508,31 +487,13 @@ export const enable_resize = (app, vp = null) => {
 	return(_resize);
 }
 
-// Resolves link source and target nodes, replacing .source and .target integer ids with node graphics
-// TODO: rempa node indices to 0...n-1, then use log(n) search on the link resolution
+// Resolves link source and target nodes, replacing .source and .target ids with node graphics
+// TODO: remap node indices to 0...n-1, then use log(n) search on the link resolution
 export const resolve_links = (nodes, links) => {
 	const id_map = fromPairs(nodes.map((node, i) => { return [node.id, i]; }));
 	links.forEach((link) => {
-		if (!(link.source instanceof Graphics)){
-			link.source = nodes[id_map[link.source]];
-			// link.source = nodes.find((node) => { return node.id == link.source });
-			// const ii = nodes[sortedIndexBy(nodes, link.source, (node) => { return node.id })];
-			// const jj = nodes.find((node) => { return node.id == link.source });
-			// console.log(ii == jj);
-			// link.source = nodes[sortedIndexBy(nodes, link.source, (node) => { return node.id })];
-		}
-		if (!(link.target instanceof Graphics)){
-			link.target = nodes[id_map[link.target]];
-			// link.target = nodes.find((node) => { return node.id == link.target });
-			// link.target = nodes[sortedIndexBy(nodes, link.target, (node) => { return node.id })];
-		}
-	});
-}
-
-export const resolve_links_index = (nodes, links) => {
-	links.forEach((link) => {
-		link.source = nodes.findIndex((node) => { return node.id == link.source });
-		link.target = nodes.findIndex((node) => { return node.id == link.target });
+		link.source = link.source instanceof Graphics ? link.source : nodes[id_map[link.source]];
+		link.target = link.target instanceof Graphics ? link.target : nodes[id_map[link.target]];
 	});
 }
 
@@ -604,13 +565,6 @@ export const enable_lasso = (visRootID) => {
 // 	var lassoInstance = lasso().on('start', handleLassoStart).on('end', handleLassoEnd);
 // 	lassoInstance(svg_el);		
 // }
-export const enable_drag_container = (container) => {
-	container.interactive = true; 
-	container.visible = true; 
-	//console.log(container.getBounds());
-	container.hitArea = container.getBounds();
-	return(container);
-}
 
 // Puts a list of items accessed by 'acc' into a container
 export const group_items = (items, acc = identity) => {
@@ -619,7 +573,7 @@ export const group_items = (items, acc = identity) => {
 	return group;
 }
 
-function readTextFile(file, callback) {
+export const readTextFile = (file, callback) => {
 	var rawFile = new XMLHttpRequest();
 	rawFile.overrideMimeType("application/json");
 	rawFile.open("GET", file, true);
@@ -632,12 +586,12 @@ function readTextFile(file, callback) {
 }
 
 class Pixiplex {
-	constructor(width = 250, height = 250, scale = 2.0){
+	constructor(nodes = [], links = [], width = 250, height = 250, scale = 2.0, forces = {}){
 		this.width = width
 		this.height = height
 		this.scale = scale
-		this.nodes = null
-		this.links = null
+		this.nodes = nodes
+		this.links = links
 		this.polygons = null
 		this.nodes_gfx = null
 		this.links_gfx = null
@@ -649,45 +603,47 @@ class Pixiplex {
 		
 		// Default force parameters
 		// < name > : { enabled: < boolean >, type: < force type >, params: { < force parameters > } }
-		this.force_params = { 
-			charge: { enabled: true, type: "forceManyBody", params: { strength: function() { return -30 }, distanceMin: 1, distanceMax: Infinity } },
-			link: { enabled: true, type: "forceLink", params: { distance: 30, iterations: 1, id: function(d){ return d.id; } } },
-			center: { enabled: true, type: "forceCenter", params: { x: 0, y: 0 } }
-		}
+		// this.force_params = default_sim_params.force;
+		this.forces = forces;
+		// 	charge: { enabled: true, type: "forceManyBody", params: { strength: function() { return -30 }, distanceMin: 1, distanceMax: Infinity } },
+		// 	spring: { enabled: true, type: "forceLink", params: { distance: 30, iterations: 1, id: function(d){ return d.id; } } },
+		// 	center: { enabled: true, type: "forceCenter", params: { x: 0, y: 0 } }
+		// }
 		// this.sim = null
 		// this.sim_params = null // the force simulation + parameters
 	}
+	// Update force parameters: TODO add to separate methods
+	// assign(this?.force_params?.center?.params, { x: this.width / 2, y: this.height / 2 });
+	// assign(this?.force_params?.spring?.params, { links: this.links });
+
+	async init(drag = true, center = true){
+			// Pixi & viewport related initializations
+			await this._init_application();
+			this._init_viewport();
+			this._init_ticker();
 	
-	async default_init(nodes, links){
-		
-		// Pixi & viewport related initializations
-		await this.initialize_application();
-		this.initialize_viewport();
-		this.init_ticker();
-
-		// Rendering & graph related initializations
-		console.log(this);
-		await this.initialize_graph_data(nodes, links);
-		add_items(this.vp, [this.links_gfx]); // add links to viewport
-		add_items(this.vp, this.nodes_gfx);   // add nodes to viewport
-		this.ticker.add((ticker) => {
-			build_links(this.links, this.links_gfx, this.line_style);
-		});
-		this.app.stage.addChild(this.vp)
-		
-		// Runtime initializations
-		this.init_force();
-		this.enable_drag();
-		this.ticker.start();
-		this.center_graph(true);
-
-		this.force_params = serialize_force(this.sim, )
+			// Rendering & graph related initializations
+			// this.links = links; 
+			// this.nodes = nodes;
+			this._init_graphics(this.nodes, this.links)
+			add_items(this.vp, [this.links_gfx]); // add links to viewport
+			add_items(this.vp, this.nodes_gfx);   // add nodes to viewport
+			this.ticker.add((ticker) => {
+				build_links(this.links, this.links_gfx, this.line_style);
+			});
+			this._init_force();
+			
+			// Runtime initializations
+			this.ticker.start();
+			if (drag) { this.enable_drag(); }
+			if (center) { this.center_graph(true); }
 	}
 
+	
 	// Should be called once. Creates members: 
 	// - app 
 	// - view
-	async initialize_application(options){
+	async _init_application(options){
 		// this.view = document.createElement('canvas');
 		// this.view.width = this.width;
 		// this.view.height = this.height;
@@ -730,24 +686,40 @@ class Pixiplex {
 	// Create a viewport to handle panning, dragging, etc.
 	// for pixi v8, see: https://github.com/davidfig/pixi-viewport/issues/488. 
 	// - vp 
-	async initialize_viewport(){
+	async _init_viewport(){
 		if (Object.hasOwn(this, "app")){
 			// const zoomScale = this.pixel_ratio * this.scale;
 			const zoomScale = this.scale;
-			this.vp = create_viewport(this.app, this.width, this.height, zoomScale * this.width, zoomScale * this.height);
-			var vp_params = {
+			this.vp = new Viewport({
+				screenWidth: this.width, 
+				screenHeight: this.height,
+				worldWidth: zoomScale * this.width, 
+				worldHeight: zoomScale * this.height,
+				events: this.app.renderer.events,  // this changed; app must be initialized
+				threshold: 10,  // number of pixels to move to trigger an input event 
+				// stopPropagation: true, 
+				// interaction: app.renderer.plugins.interaction
+			});
+			// this.vp = create_viewport(this.app, this.width, this.height, zoomScale * this.width, zoomScale * this.height);
+			const vp_params = {
 				clampZoom: { minWidth: this.width/zoomScale, maxWidth: this.width*zoomScale, minHeight: this.height/zoomScale, maxHeight: this.height*zoomScale }
 			}
 			// Clamp gets rid of panning !.clamp({ direction: 'all'})
-			this.vp.drag({ wheel: false }).pinch().wheel(1e-3).clamp({ direction: 'all'}).clampZoom(vp_params.clampZoom).decelerate();
+			this.vp
+				.drag({ wheel: false })
+				.pinch()
+				.wheel(1e-3)
+				.clamp({ direction: 'all'})
+				.clampZoom(vp_params.clampZoom)
+				.decelerate();
 			// this.vp.drag().wheel(1e-3).clamp({ direction: 'all'}).clampZoom(vp_params.clampZoom).decelerate();		
-			// this.app.stage.addChild(this.vp);
+			this.app.stage.addChild(this.vp)
+			return this.vp; 
 		}
 	}
 	
-	// - ticker 
-	// - dispatcher
-	init_ticker(){
+	/** Initializes the pixi.js ticker and d3-dispatcher */
+	_init_ticker(){
 		const [ticker, dispatcher] = register_ticker(this.app, this.vp); // the (pixi) simulation tick
 		this.ticker = ticker 				 // pixi.js ticker
 		this.dispatcher = dispatcher // d3-dispatcher
@@ -756,57 +728,89 @@ class Pixiplex {
 	
 	// Initialize Graphics(); should be called after graph is initialized
 	// Modifies the links in-place to point to nodes
-	initialize_graphics(nodes, links){
+	_init_graphics(nodes, links){
 		if (Object.hasOwn(this, "nodes") && Object.hasOwn(this, "links")){
 			// First: add (x,y) coordinates to nodes, if not given, and scale them by the width/height
 			scale_nodes(nodes, this.width, this.height)
 			// this.nodes_gfx = generate_node_graphics(nodes);
-			this.init_node_gfx(nodes);
 			
-			// Populate the links with node graphic references
-			resolve_links(this.nodes_gfx, links);
+			// Merge new Graphics instances w/ node attributes, then 'build' by apply the styling
+			this.nodes_gfx = map(nodes, (node) => { return assign(new Graphics(), node); })
+			build_nodes(this.nodes_gfx, this.node_style)
+			
+			// Populate the links with node graphic references	(used to be resolve_links)
+			const id_map = fromPairs(this.nodes_gfx.map((node, i) => { return [node.id, i]; }));
+			links.forEach((link) => {
+				link.source = link.source instanceof Graphics ? link.source : this.nodes_gfx[id_map[link.source]];
+				link.target = link.target instanceof Graphics ? link.target : this.nodes_gfx[id_map[link.target]];
+			});
 			this.links_gfx = generate_links_graphic();
 			build_links(links, this.links_gfx, this.line_style);
 		}
+		return [this.nodes_gfx, this.links_gfx];
 	}
 
-	// Should only be called once
-	init_node_gfx(nodes){
-		// Merge new Graphics instances w/ node attributes, then 'build' by apply the styling
-		this.nodes_gfx = map(nodes, (node) => { return assign(new Graphics(), node); })
-		build_nodes(this.nodes_gfx, this.node_style)
+		/** Initializes an stopped, empty d3-force simulation. */
+	_init_force(sim_options){
+		if (!Object.hasOwn(this, "sim")){ 
+			console.log("Enabling force simulation");
+			this.sim = forceSimulation(this.nodes_gfx); 
+			this.sim.stop();
+			this.sim.alpha(1.0); // no restart needed
+		}
+
+		// Apply default forces if not given
+		// if (typeof sim_options == 'undefined'){ 
+		// 	console.log("Using default force settings");
+		// 	const c_x = (this.width * this.scale) / 2; 
+		// 	const c_y = (this.height * this.scale) / 2; 
+		// 	apply_sim(this.sim, default_sim_params)
+		// 	apply_force(this.sim, default_sim_params.force)
+		// 	this.sim.force('center').x(c_x).y(c_y);
+		// 	this.sim.force('spring').links(this.links);
+		// } else {
+		// 	console.log("Applying force settings: ", sim_options);
+		// 	apply_sim(this.sim, sim_options)
+		// 	apply_force(this.sim, sim_options.force)
+		// }
+		this.enable_force();
+	};
+
+	
+
+	// Meta-function for applying force settings on a d3 force simulation object
+	apply_force(params){
+		if (!Object.hasOwn(this, "sim")){ return false; }
+		forOwn(params, function(settings, forcename){
+			console.log("Applying force simulation parameters")
+			console.log(settings, forcename)
+			if (!Object.hasOwn(settings, "enabled") || settings.enabled){
+				
+				// Sets up force with default setting
+				sim.force(forcename, d3_force[settings.type]());
+				
+				// Apply the given parameter settings
+				forOwn(settings.params, function(param_value, param_name){
+					console.log(forcename.toString() + ": " + param_name.toString() + " = " + param_value.toString())
+					sim.force(forcename)[param_name](param_value);			
+				})
+
+				// Hard-coded settings that should be applied every time
+				if (settings.type == "forceLink"){
+					if (!('id' in settings.params)){
+						sim.force(forcename).id((d) => d.id);
+					}
+				}
+			}
+		})
+		return sim
 	}
-
-	async initialize_graph(json_path){
-		return json(json_path).then((graph) => {
-			// console.log(this)
-			this.links = graph.links; 
-			this.nodes = graph.nodes;
-			this.initialize_graphics(this.nodes, this.links)
-			// console.log("nodes: ");
-			// console.log(this.nodes);
-			// console.log("links: ")
-			// console.log(this.links)
-
-			// Update force parameters: TODO add to separate methods
-			assign(this?.force_params?.center?.params, { x: this.width / 2, y: this.height / 2 });
-			assign(this?.force_params?.link?.params, { links: this.links });
-		});
-	}
-
-	initialize_graph_data(nodes, links){
-		this.links = links; 
-		this.nodes = nodes;
-		this.initialize_graphics(this.nodes, this.links)
-		// console.log("nodes: ");
-		// console.log(this.nodes);
-		// console.log("links: ")
-		// console.log(this.links)
-
-		// Update force parameters: TODO add to separate methods
-		assign(this?.force_params?.center?.params, { x: this.width / 2, y: this.height / 2 });
-		assign(this?.force_params?.link?.params, { links: this.links });
-	}
+	// sync_forces(fn){
+	// 	const force_names = fn ? fn : Object.keys(this.forces); 
+	// 	const force_types = map(this.forces, (value, key) => { return value.type; });
+	// 	console.log(this.forces);
+	// 	this.force_params = merge(this.forces, serialize_force(this.sim, force_names, force_types));
+	// }
 
 	// Register the dragging callbacks for the nodes
 	enable_drag(){
@@ -873,29 +877,6 @@ class Pixiplex {
 		});
 	}
 
-	init_force(sim_options){
-		if (!Object.hasOwn(this, "sim")){ 
-			console.log("Enabling force simulation");
-			this.sim = forceSimulation(this.nodes_gfx); 
-			this.sim.stop();
-			this.sim.alpha(1.0); // no restart needed
-		}
-
-		// Apply default forces if not given
-		if (typeof sim_options == 'undefined'){ 
-			console.log("Using default force settings");
-			const c_x = (this.width * this.scale) / 2; 
-			const c_y = (this.height * this.scale) / 2; 
-			apply_sim(this.sim, default_sim_params)
-			apply_force(this.sim, default_sim_params.force)
-			this.sim.force('center').x(c_x).y(c_y);
-			this.sim.force('link').links(this.links);
-		} else {
-			apply_sim(this.sim, sim_options)
-			apply_force(this.sim, sim_options.force)
-		}
-		this.enable_force();
-	};
 
 	enable_force(){
 		this.dispatcher.on("tick.force", () => {
@@ -929,12 +910,28 @@ class Pixiplex {
 		if (fit){
 			this.vp.fit(false, this.width, this.height);
 			// this.vp.moveCorner(this.width / this.scale, this.height / this.scale); // For w/e reason, moveCenter is bugged
-			this.vp.moveCenter(c_x, c_y);
 		}
-		this.sim?.force('center').x(c_x).y(c_y);
+		this.vp.moveCenter(c_x, c_y);
+		this.sim?.force('center')?.x(c_x).y(c_y);
 		this.sim?.restart();
 		// this.app.renderer.render(this.app.stage);
 	}
+
+	force_link(name, params = {}){
+		let link_force = forceLink(this.links).id((d) => d.id);
+		forOwn(params, (param_value, param_name) => {
+			console.log(name.toString() + ": " + param_name.toString() + " = " + param_value.toString())
+			link_force[param_name](param_value);			
+		})
+		this.sim.force(name, link_force); // register the link force
+	};
+
+	// TODO: figure out how to do array 
+	node_radii(r){
+		const new_style = { ...NODE_STYLE, radius: r };
+		build_nodes(pp.nodes_gfx, new_style);
+	}
+
 }
 
 
@@ -942,4 +939,5 @@ class Pixiplex {
 export { map, forOwn, remove, concat, filter, unionBy, unionWith, pullAllBy, pullAllWith, intersectionWith, differenceBy, differenceWith, transform, includes, isEmpty, merge, flatMap}
 export { Application, Graphics, GraphicsContext, Polygon, Text, Ticker, Container, Viewport }
 export { Pixiplex }
+export { json }
 // export { loadPyodide }

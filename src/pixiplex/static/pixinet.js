@@ -18907,9 +18907,9 @@ var init_buildArcToSvg = __esm({
 
 // node_modules/pixi.js/lib/scene/graphics/shared/path/roundShape.mjs
 function roundedShapeArc(g2, points, radius) {
-  const vecFrom = (p2, pp) => {
-    const x5 = pp.x - p2.x;
-    const y4 = pp.y - p2.y;
+  const vecFrom = (p2, pp2) => {
+    const x5 = pp2.x - p2.x;
+    const y4 = pp2.y - p2.y;
     const len = Math.sqrt(x5 * x5 + y4 * y4);
     const nx = x5 / len;
     const ny = y4 / len;
@@ -44344,6 +44344,19 @@ function baseSlice(array2, start2, end) {
 }
 var baseSlice_default = baseSlice;
 
+// node_modules/lodash-es/_arrayReduce.js
+function arrayReduce(array2, iteratee, accumulator, initAccum) {
+  var index2 = -1, length = array2 == null ? 0 : array2.length;
+  if (initAccum && length) {
+    accumulator = array2[++index2];
+  }
+  while (++index2 < length) {
+    accumulator = iteratee(accumulator, array2[index2], index2, array2);
+  }
+  return accumulator;
+}
+var arrayReduce_default = arrayReduce;
+
 // node_modules/lodash-es/_stackClear.js
 function stackClear() {
   this.__data__ = new ListCache_default();
@@ -45490,6 +45503,22 @@ function basePullAt(array2, indexes) {
 }
 var basePullAt_default = basePullAt;
 
+// node_modules/lodash-es/_baseReduce.js
+function baseReduce(collection, iteratee, accumulator, initAccum, eachFunc) {
+  eachFunc(collection, function(value, index2, collection2) {
+    accumulator = initAccum ? (initAccum = false, value) : iteratee(accumulator, value, index2, collection2);
+  });
+  return accumulator;
+}
+var baseReduce_default = baseReduce;
+
+// node_modules/lodash-es/reduce.js
+function reduce(collection, iteratee, accumulator) {
+  var func = isArray_default(collection) ? arrayReduce_default : baseReduce_default, initAccum = arguments.length < 3;
+  return func(collection, baseIteratee_default(iteratee, 4), accumulator, initAccum, baseEach_default);
+}
+var reduce_default = reduce;
+
 // node_modules/lodash-es/remove.js
 function remove2(array2, predicate) {
   var result = [];
@@ -45656,26 +45685,6 @@ var POLYGON_STYLE = {
   color: 6621786,
   alpha: 0.2
 };
-var _default_link_params = {
-  distance: 30,
-  iterations: 1,
-  id: function(d3) {
-    return d3.id;
-  }
-};
-var _default_manybody_params = { strength: function() {
-  return -30;
-}, distanceMin: 1, distanceMax: Infinity };
-var _default_center_params = { x: 0, y: 0 };
-var default_sim_params = {
-  alpha: 1,
-  force: {
-    // < name > : { enabled: < boolean >, type: < force type >, params: { < force parameters > } }
-    charge: { enabled: true, type: "forceManyBody", params: _default_manybody_params },
-    link: { enabled: true, type: "forceLink", params: _default_link_params },
-    center: { enabled: true, type: "forceCenter", params: _default_center_params }
-  }
-};
 var FORCE_PARAMS = {
   forceManyBody: ["strength", "theta", "distanceMin", "distanceMax"],
   forceLink: ["distance", "strength", "iterations"],
@@ -45684,12 +45693,12 @@ var FORCE_PARAMS = {
   forceX: ["strength", "x"],
   forceY: ["strength", "y"]
 };
-var serialize_force = (sim, force_names, force_types) => {
+var serialize_force = (sim2, force_names, force_types) => {
   const _force_params = force_names.map((force_name, i2) => {
     const force_type = force_types[i2];
-    const force = sim.force(force_name);
+    const force = sim2.force(force_name);
     const params = FORCE_PARAMS[force_type] || [];
-    const serialized_params = _.reduce(params, (result, param) => {
+    const serialized_params = reduce_default(params, (result, param) => {
       result[param] = force[param]();
       return result;
     }, {});
@@ -45735,26 +45744,14 @@ var clean = (obj) => {
   Object.keys(obj).forEach((key) => obj[key] == null && delete obj[key]);
   return obj;
 };
-var apply_sim = (sim, params) => {
+var apply_sim = (sim2, params) => {
   forOwn_default(params, function(value, key) {
     if (key != "force") {
       console.log(key.toString() + " = " + value.toString());
-      sim[key](value);
+      sim2[key](value);
     }
   });
-  return sim;
-};
-var apply_force = (sim, params) => {
-  forOwn_default(params, function(settings, forcename) {
-    if (!Object.hasOwn(settings, "enabled") || settings.enabled) {
-      sim.force(forcename, src_exports[settings.type]());
-      forOwn_default(settings.params, function(param_value, param_name) {
-        console.log(forcename.toString() + ": " + param_name.toString() + " = " + param_value.toString());
-        sim.force(forcename)[param_name](param_value);
-      });
-    }
-  });
-  return sim;
+  return sim2;
 };
 var scale_nodes = (nodes, w2, h2) => {
   nodes.forEach((node) => {
@@ -45944,10 +45941,10 @@ var pixi_drag = (pixi_obj) => {
     return dispatcher;
   };
 };
-var force_drag = (sim) => {
+var force_drag = (sim2) => {
   return function(dispatcher) {
     dispatcher.on("start.force", function(e3) {
-      sim.alphaTarget(0.3).restart();
+      sim2.alphaTarget(0.3).restart();
       this.fx = this.x;
       this.fy = this.y;
     }).on("dragging.force", function(e3, coords) {
@@ -45955,7 +45952,7 @@ var force_drag = (sim) => {
       this.fy = coords.y;
     }).on("end.force", function(e3) {
       if (!this.dragging) {
-        sim.alphaTarget(0);
+        sim2.alphaTarget(0);
       }
       this.fx = null;
       this.fy = null;
@@ -46010,22 +46007,8 @@ var resolve_links = (nodes, links) => {
     return [node.id, i2];
   }));
   links.forEach((link) => {
-    if (!(link.source instanceof Graphics)) {
-      link.source = nodes[id_map[link.source]];
-    }
-    if (!(link.target instanceof Graphics)) {
-      link.target = nodes[id_map[link.target]];
-    }
-  });
-};
-var resolve_links_index = (nodes, links) => {
-  links.forEach((link) => {
-    link.source = nodes.findIndex((node) => {
-      return node.id == link.source;
-    });
-    link.target = nodes.findIndex((node) => {
-      return node.id == link.target;
-    });
+    link.source = link.source instanceof Graphics ? link.source : nodes[id_map[link.source]];
+    link.target = link.target instanceof Graphics ? link.target : nodes[id_map[link.target]];
   });
 };
 var enable_lasso = (visRootID) => {
@@ -46051,12 +46034,6 @@ var enable_lasso = (visRootID) => {
   });
   return dispatcher;
 };
-var enable_drag_container = (container) => {
-  container.interactive = true;
-  container.visible = true;
-  container.hitArea = container.getBounds();
-  return container;
-};
 var group_items = (items, acc = identity5) => {
   let group = new Container();
   items.forEach((item) => {
@@ -46064,13 +46041,24 @@ var group_items = (items, acc = identity5) => {
   });
   return group;
 };
+var readTextFile = (file, callback) => {
+  var rawFile = new XMLHttpRequest();
+  rawFile.overrideMimeType("application/json");
+  rawFile.open("GET", file, true);
+  rawFile.onreadystatechange = function() {
+    if (rawFile.readyState === 4 && rawFile.status == "200") {
+      callback(rawFile.responseText);
+    }
+  };
+  rawFile.send(null);
+};
 var Pixiplex = class {
-  constructor(width = 250, height = 250, scale = 2) {
+  constructor(nodes = [], links = [], width = 250, height = 250, scale = 2, forces = {}) {
     this.width = width;
     this.height = height;
     this.scale = scale;
-    this.nodes = null;
-    this.links = null;
+    this.nodes = nodes;
+    this.links = links;
     this.polygons = null;
     this.nodes_gfx = null;
     this.links_gfx = null;
@@ -46078,38 +46066,34 @@ var Pixiplex = class {
     this.node_style = NODE_STYLE;
     this.line_style = LINE_STYLE;
     this.polygon_style = POLYGON_STYLE;
-    this.force_params = {
-      charge: { enabled: true, type: "forceManyBody", params: { strength: function() {
-        return -30;
-      }, distanceMin: 1, distanceMax: Infinity } },
-      link: { enabled: true, type: "forceLink", params: { distance: 30, iterations: 1, id: function(d3) {
-        return d3.id;
-      } } },
-      center: { enabled: true, type: "forceCenter", params: { x: 0, y: 0 } }
-    };
+    this.forces = forces;
   }
-  async default_init(nodes, links) {
-    await this.initialize_application();
-    this.initialize_viewport();
-    this.init_ticker();
-    console.log(this);
-    await this.initialize_graph_data(nodes, links);
+  // Update force parameters: TODO add to separate methods
+  // assign(this?.force_params?.center?.params, { x: this.width / 2, y: this.height / 2 });
+  // assign(this?.force_params?.spring?.params, { links: this.links });
+  async init(drag = true, center = true) {
+    await this._init_application();
+    this._init_viewport();
+    this._init_ticker();
+    this._init_graphics(this.nodes, this.links);
     add_items(this.vp, [this.links_gfx]);
     add_items(this.vp, this.nodes_gfx);
     this.ticker.add((ticker) => {
       build_links(this.links, this.links_gfx, this.line_style);
     });
-    this.app.stage.addChild(this.vp);
-    this.init_force();
-    this.enable_drag();
+    this._init_force();
     this.ticker.start();
-    this.center_graph(true);
-    this.force_params = serialize_force(this.sim);
+    if (drag) {
+      this.enable_drag();
+    }
+    if (center) {
+      this.center_graph(true);
+    }
   }
   // Should be called once. Creates members: 
   // - app 
   // - view
-  async initialize_application(options) {
+  async _init_application(options) {
     this.app = new Application();
     this.pixel_ratio = devicePixelRatio;
     let app_params = {
@@ -46152,7 +46136,7 @@ var Pixiplex = class {
   // Create a viewport to handle panning, dragging, etc.
   // for pixi v8, see: https://github.com/davidfig/pixi-viewport/issues/488. 
   // - vp 
-  async initialize_viewport() {
+  async _init_viewport() {
     if (Object.hasOwn(this, "app")) {
       const zoomScale = this.scale;
       this.vp = create_viewport(this.app, this.width, this.height, zoomScale * this.width, zoomScale * this.height);
@@ -46160,49 +46144,76 @@ var Pixiplex = class {
         clampZoom: { minWidth: this.width / zoomScale, maxWidth: this.width * zoomScale, minHeight: this.height / zoomScale, maxHeight: this.height * zoomScale }
       };
       this.vp.drag({ wheel: false }).pinch().wheel(1e-3).clamp({ direction: "all" }).clampZoom(vp_params.clampZoom).decelerate();
+      this.app.stage.addChild(this.vp);
+      return this.vp;
     }
   }
-  // - ticker 
-  // - dispatcher
-  init_ticker() {
+  /** Initializes the pixi.js ticker and d3-dispatcher */
+  _init_ticker() {
     const [ticker, dispatcher] = register_ticker(this.app, this.vp);
     this.ticker = ticker;
     this.dispatcher = dispatcher;
   }
   // Initialize Graphics(); should be called after graph is initialized
   // Modifies the links in-place to point to nodes
-  initialize_graphics(nodes, links) {
+  _init_graphics(nodes, links) {
     if (Object.hasOwn(this, "nodes") && Object.hasOwn(this, "links")) {
       scale_nodes(nodes, this.width, this.height);
-      this.init_node_gfx(nodes);
-      resolve_links(this.nodes_gfx, links);
+      this.nodes_gfx = map_default(nodes, (node) => {
+        return assign_default(new Graphics(), node);
+      });
+      build_nodes(this.nodes_gfx, this.node_style);
+      const id_map = fromPairs_default(this.nodes_gfx.map((node, i2) => {
+        return [node.id, i2];
+      }));
+      links.forEach((link) => {
+        link.source = link.source instanceof Graphics ? link.source : this.nodes_gfx[id_map[link.source]];
+        link.target = link.target instanceof Graphics ? link.target : this.nodes_gfx[id_map[link.target]];
+      });
       this.links_gfx = generate_links_graphic();
       build_links(links, this.links_gfx, this.line_style);
     }
+    return [this.nodes_gfx, this.links_gfx];
   }
-  // Should only be called once
-  init_node_gfx(nodes) {
-    this.nodes_gfx = map_default(nodes, (node) => {
-      return assign_default(new Graphics(), node);
+  /** Initializes an stopped, empty d3-force simulation. */
+  _init_force(sim_options) {
+    if (!Object.hasOwn(this, "sim")) {
+      console.log("Enabling force simulation");
+      this.sim = simulation_default(this.nodes_gfx);
+      this.sim.stop();
+      this.sim.alpha(1);
+    }
+    this.enable_force();
+  }
+  // Meta-function for applying force settings on a d3 force simulation object
+  apply_force(params) {
+    if (!Object.hasOwn(this, "sim")) {
+      return false;
+    }
+    forOwn_default(params, function(settings, forcename) {
+      console.log("Applying force simulation parameters");
+      console.log(settings, forcename);
+      if (!Object.hasOwn(settings, "enabled") || settings.enabled) {
+        sim.force(forcename, src_exports[settings.type]());
+        forOwn_default(settings.params, function(param_value, param_name) {
+          console.log(forcename.toString() + ": " + param_name.toString() + " = " + param_value.toString());
+          sim.force(forcename)[param_name](param_value);
+        });
+        if (settings.type == "forceLink") {
+          if (!("id" in settings.params)) {
+            sim.force(forcename).id((d3) => d3.id);
+          }
+        }
+      }
     });
-    build_nodes(this.nodes_gfx, this.node_style);
+    return sim;
   }
-  async initialize_graph(json_path) {
-    return json_default(json_path).then((graph) => {
-      this.links = graph.links;
-      this.nodes = graph.nodes;
-      this.initialize_graphics(this.nodes, this.links);
-      assign_default(this?.force_params?.center?.params, { x: this.width / 2, y: this.height / 2 });
-      assign_default(this?.force_params?.link?.params, { links: this.links });
-    });
-  }
-  initialize_graph_data(nodes, links) {
-    this.links = links;
-    this.nodes = nodes;
-    this.initialize_graphics(this.nodes, this.links);
-    assign_default(this?.force_params?.center?.params, { x: this.width / 2, y: this.height / 2 });
-    assign_default(this?.force_params?.link?.params, { links: this.links });
-  }
+  // sync_forces(fn){
+  // 	const force_names = fn ? fn : Object.keys(this.forces); 
+  // 	const force_types = map(this.forces, (value, key) => { return value.type; });
+  // 	console.log(this.forces);
+  // 	this.force_params = merge(this.forces, serialize_force(this.sim, force_names, force_types));
+  // }
   // Register the dragging callbacks for the nodes
   enable_drag() {
     if (!Object.hasOwn(this, "nodes_gfx")) {
@@ -46213,7 +46224,7 @@ var Pixiplex = class {
     let dragTarget = null;
     let viewport = this.vp;
     let dispatcher = this.dispatcher;
-    let sim = this.sim;
+    let sim2 = this.sim;
     function onDragMove(event, node) {
       if (dragTarget) {
         dragTarget.parent.toLocal(event.global, null, dragTarget.position);
@@ -46227,11 +46238,11 @@ var Pixiplex = class {
       viewport.on("pointermove", onDragMove);
       dragTarget.fx = dragTarget.x;
       dragTarget.fy = dragTarget.y;
-      sim?.alphaTarget(0.3)?.restart();
+      sim2?.alphaTarget(0.3)?.restart();
     }
     function onDragEnd() {
       if (dragTarget) {
-        sim?.alphaTarget(0);
+        sim2?.alphaTarget(0);
         dragTarget.fx = null;
         dragTarget.fy = null;
         viewport.off("pointermove", onDragMove);
@@ -46253,27 +46264,6 @@ var Pixiplex = class {
     this.nodes_gfx.forEach((node) => {
       node.interactive = false;
     });
-  }
-  init_force(sim_options) {
-    if (!Object.hasOwn(this, "sim")) {
-      console.log("Enabling force simulation");
-      this.sim = simulation_default(this.nodes_gfx);
-      this.sim.stop();
-      this.sim.alpha(1);
-    }
-    if (typeof sim_options == "undefined") {
-      console.log("Using default force settings");
-      const c_x = this.width * this.scale / 2;
-      const c_y = this.height * this.scale / 2;
-      apply_sim(this.sim, default_sim_params);
-      apply_force(this.sim, default_sim_params.force);
-      this.sim.force("center").x(c_x).y(c_y);
-      this.sim.force("link").links(this.links);
-    } else {
-      apply_sim(this.sim, sim_options);
-      apply_force(this.sim, sim_options.force);
-    }
-    this.enable_force();
   }
   enable_force() {
     this.dispatcher.on("tick.force", () => {
@@ -46305,10 +46295,23 @@ var Pixiplex = class {
     }
     if (fit) {
       this.vp.fit(false, this.width, this.height);
-      this.vp.moveCenter(c_x, c_y);
     }
-    this.sim?.force("center").x(c_x).y(c_y);
+    this.vp.moveCenter(c_x, c_y);
+    this.sim?.force("center")?.x(c_x).y(c_y);
     this.sim?.restart();
+  }
+  force_link(name, params = {}) {
+    let link_force = link_default(this.links).id((d3) => d3.id);
+    forOwn_default(params, (param_value, param_name) => {
+      console.log(name.toString() + ": " + param_name.toString() + " = " + param_value.toString());
+      link_force[param_name](param_value);
+    });
+    this.sim.force(name, link_force);
+  }
+  // TODO: figure out how to do array 
+  node_radii(r2) {
+    const new_style = { ...NODE_STYLE, radius: r2 };
+    build_nodes(pp.nodes_gfx, new_style);
   }
 };
 export {
@@ -46326,7 +46329,6 @@ export {
   it as Viewport,
   _build_polygon,
   add_items,
-  apply_force,
   apply_sim,
   build_links,
   build_nodes,
@@ -46340,12 +46342,10 @@ export {
   create_viewport,
   current_ns,
   default_ns,
-  default_sim_params,
   differenceBy_default as differenceBy,
   differenceWith_default as differenceWith,
   disable_interactive,
   drag_dispatcher,
-  enable_drag_container,
   enable_interactive,
   enable_lasso,
   enable_resize,
@@ -46363,6 +46363,7 @@ export {
   insert_nodes,
   intersectionWith_default as intersectionWith,
   isEmpty_default as isEmpty,
+  json_default as json,
   make_group,
   make_scale,
   map_default as map,
@@ -46371,12 +46372,12 @@ export {
   pullAllBy_default as pullAllBy,
   pullAllWith_default as pullAllWith,
   range,
+  readTextFile,
   register_tick_stops,
   register_ticker,
   remove_default4 as remove,
   remove_nodes,
   resolve_links,
-  resolve_links_index,
   scale_nodes,
   serialize_force,
   transform_default as transform,

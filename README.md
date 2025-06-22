@@ -2,6 +2,14 @@
 
 > CAUTION: Experimental library being developed for fun. Do not use. 
 
+### Interactive dashboard
+
+An interactive dashboard showcasing the functionality of the package can be run via the Panel command:
+
+```bash
+panel serve src/pixiplex/panel_app.py
+```
+
 ## Development 
 
 Below is the *correct* dev workflow, based on [anywidgets dev workflow](https://youtu.be/600PU6E4Srw?si=z2yqNLeX9-M2gedf).

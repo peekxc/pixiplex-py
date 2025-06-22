@@ -1,14 +1,13 @@
 """pixiplex library."""
 
 __version__ = "0.0.1"
-
-from .pixinet import Pixinet, PixinetPanel
+import json
+from pathlib import Path
+from .pixinet import Pixinet
 
 
 def load_les_miserables():
 	import numpy as np
-	import json
-	from pathlib import Path
 
 	OUTPUT_DIR = Path(__file__).parent / "static" / "data"
 

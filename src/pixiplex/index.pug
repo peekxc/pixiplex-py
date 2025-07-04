@@ -13,9 +13,9 @@ body
 		button(id="enable_force_button" type="button") Enable force
 		button(id="disable_force_button" type="button") Disable forces
 	div 
-		button(id="toggle_center_button" type="button") Toggle center force
-		button(id="toggle_link_button" type="button") Toggle link force
-		button(id="toggle_nbody_button" type="button") Toggle n-body force 
+		button(id="toggle_center_force" type="button") Toggle center force
+		button(id="toggle_link_force" type="button") Toggle link force
+		button(id="toggle_nbody_force" type="button") Toggle n-body force 
 	div 
 		button(id="enable_drag_button" type="button") Enable node drag
 		button(id="disable_drag_button" type="button") Disable node drag
@@ -77,15 +77,36 @@ script(type="module").
 	pn_cont.appendChild(pp.view);
 
 	// Add event listeners to buttons	
-	document.getElementById("init_force_button").addEventListener("click", function(){
-		//- pp.sim.
-		pp.forceLink
-	});
 	document.getElementById("enable_force_button").addEventListener("click", function(){
 		pp.enable_force();
 	});
 	document.getElementById("disable_force_button").addEventListener("click", function(){
 		pp.disable_force();
+	});
+
+	// ---- Force toggles ---- 
+	document.getElementById("toggle_center_force").addEventListener("click", function(){
+		if (pp.sim.force('center') === undefined){
+			pp.force_center('center');
+		} else {
+			pp.sim.force('center', null);
+		}
+	});
+
+	document.getElementById("toggle_link_force").addEventListener("click", function(){
+		if (pp.sim.force('spring') === undefined){
+			pp.force_link('spring');
+		} else {
+			pp.sim.force('spring', null);
+		}
+	});
+
+	document.getElementById("toggle_nbody_force").addEventListener("click", function(){
+		if (pp.sim.force('charge') === undefined){
+			pp.force_manybody('charge');
+		} else {
+			pp.sim.force('charge', null);
+		}
 	});
 
 	document.getElementById("center_button").addEventListener("click", function(){

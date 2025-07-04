@@ -102,14 +102,11 @@ export const serialize_force = (sim, force_names, force_types) => {
 		return [force_name, { enabled: true, type: force_type, params : serialized_params }];
 	});
 	return fromPairs(_force_params);
-	// return { type: force_type, params: force_params };
-	// .fromPairs()
-	// .value();
 }
 
 // Given a node, export its node style
 export const current_ns = (node) => {
-	let gd = node.graphicsData[0]
+	const gd = node.graphicsData[0]
 	let c_ns = { 
 		lineStyle: { size: gd.lineWidth, color: gd.lineColor },
 		color: gd.fillColor,
@@ -219,21 +216,6 @@ export const clear_stage = (stage) => {
 	};
 }
 
-// Create viewport
-export const create_viewport = (app, sw, sh, ww=sw, wh=sh) => {
-	var viewport = new Viewport({
-		screenWidth: sw, 
-		screenHeight: sh,
-		worldWidth: ww, 
-		worldHeight: wh,
-		events: app.renderer.events,  // this changed; app must be initialized
-		threshold: 10,  // number of pixels to move to trigger an input event 
-		// stopPropagation: true, 
-		// interaction: app.renderer.plugins.interaction
-	});
-	return(viewport);
-}
-
 // Recreates node Graphics objects
 export const generate_node_graphics = (nodes) => {
 	return map(nodes, (node) => { return Object.assign(build_node(new Graphics()), node); });
@@ -245,29 +227,6 @@ export const generate_links_graphic = () => {
 export const generate_polygon_graphics = (polygons) => {
 	return _.map(polygons, (polygon) => { polygon.gfx = new Graphics(); return polygon; });
 }
-// lineStyle: { size: 1.5, color: 0xFFFFFF },
-// color: 0x650A5A,
-// radius: 6,
-// alpha: 1
-// const update_node_style = (gfx, ns) => {
-// 	var len = gfx.graphicsData.length;    
-//   for (var i = 0; i < len; i++) {        
-//     var data = gfx.graphicsData[i];
-//     data.lineWidth = ns.lineWidth;        
-//     data.lineColor = ns.color;        
-//     data.alpha = ns.alpha;   
-//     gfx.dirty++;        
-//     gfx.clearDirty++;    
-//   }   
-// }
-
-// const set_node_style = (nodes, ns = node_style) => {
-// 	if (ns.constructor === Array && ns.length == nodes.length){
-// 		nodes.forEach((node, i) => { draw_node(node, Object.assign(node_style, ns[i])) })
-// 	} else if (ns.constructor == Object){
-// 		nodes.forEach((node) => { draw_node(node, Object.assign(node_style, ns)) })
-// 	}
-// }
 
 // Draws the nodes according to the current style, which can be a single single style or a style per-node
 export const build_nodes = (nodes, ns) => {
@@ -777,34 +736,6 @@ class Pixiplex {
 	};
 
 	
-
-	// Meta-function for applying force settings on a d3 force simulation object
-	apply_force(params){
-		if (!Object.hasOwn(this, "sim")){ return false; }
-		forOwn(params, function(settings, forcename){
-			console.log("Applying force simulation parameters")
-			console.log(settings, forcename)
-			if (!Object.hasOwn(settings, "enabled") || settings.enabled){
-				
-				// Sets up force with default setting
-				sim.force(forcename, d3_force[settings.type]());
-				
-				// Apply the given parameter settings
-				forOwn(settings.params, function(param_value, param_name){
-					console.log(forcename.toString() + ": " + param_name.toString() + " = " + param_value.toString())
-					sim.force(forcename)[param_name](param_value);			
-				})
-
-				// Hard-coded settings that should be applied every time
-				if (settings.type == "forceLink"){
-					if (!('id' in settings.params)){
-						sim.force(forcename).id((d) => d.id);
-					}
-				}
-			}
-		})
-		return sim
-	}
 	// sync_forces(fn){
 	// 	const force_names = fn ? fn : Object.keys(this.forces); 
 	// 	const force_types = map(this.forces, (value, key) => { return value.type; });
@@ -917,20 +848,64 @@ class Pixiplex {
 		// this.app.renderer.render(this.app.stage);
 	}
 
-	force_link(name, params = {}){
+	force_center(name = "center", x = undefined, y = undefined){
+		const xc = (x === undefined) ? this.width / 2 : x; 
+		const yc = (y === undefined) ? this.height / 2 : y; 
+		this.sim.force(name, forceCenter(xc, yc)); // register the link force
+	};
+
+	force_link(name = "spring", distance = undefined, strength = undefined, iterations = undefined){
 		let link_force = forceLink(this.links).id((d) => d.id);
-		forOwn(params, (param_value, param_name) => {
-			console.log(name.toString() + ": " + param_name.toString() + " = " + param_value.toString())
-			link_force[param_name](param_value);			
-		})
+		link_force.distance(distance || 30);
+		if (strength !== undefined){
+			link_force.strength(strength)
+		}
+		link_force.iterations(iterations || 1);
 		this.sim.force(name, link_force); // register the link force
 	};
 
-	// TODO: figure out how to do array 
-	node_radii(r){
-		const new_style = { ...NODE_STYLE, radius: r };
-		build_nodes(pp.nodes_gfx, new_style);
+	force_manybody(name = "charge", strength = undefined, theta = undefined, distanceMin = undefined, distanceMax = undefined){
+		let nbody_force = forceManyBody();
+		nbody_force.strength(strength || -30);
+		nbody_force.theta(theta || 0.90);
+		nbody_force.distanceMin(strength || 1.0);
+		nbody_force.distanceMax(strength || Infinity);
+		this.sim.force(name, nbody_force); // register the link force
+	};
+
+	// Meta-function for applying force settings on a d3 force simulation object
+	apply_force(params){
+		if (!Object.hasOwn(this, "sim")){ return false; }
+		console.log("force params", params)
+		forOwn(params, function(settings, force_name){
+			console.log("Applying force simulation parameters")
+			console.log(settings, force_name)
+			force_enabled = Object.hasOwn(settings, "enabled") || settings.enabled
+			if (!force_enabled){ return;}	
+			if (settings.type == "forceCenter"){
+				this.force_center(force_name, settings.x, settings.y);
+			} else if (settings.type == "forceManyBody"){
+				this.force_manybody(force_name, strength, theta, distanceMin, distanceMax);
+			}
+			
+				// settings.params
+				// // Sets up force with default setting
+				// this.sim.force(forcename, d3_force[settings.type]());
+				
+				// // Apply the given parameter settings
+				// forOwn(settings.params, function(param_value, param_name){
+				// 	console.log(forcename.toString() + ": " + param_name.toString() + " = " + param_value.toString())
+				// 	this.sim.force(forcename)[param_name](param_value);			
+				// })
+		})
+		return sim
 	}
+
+	// // TODO: figure out how to do array 
+	// node_radii(r){
+	// 	const new_style = { ...NODE_STYLE, radius: r };
+	// 	build_nodes(pp.nodes_gfx, new_style);
+	// }
 
 }
 
@@ -940,4 +915,12 @@ export { map, forOwn, remove, concat, filter, unionBy, unionWith, pullAllBy, pul
 export { Application, Graphics, GraphicsContext, Polygon, Text, Ticker, Container, Viewport }
 export { Pixiplex }
 export { json }
+export { d3_force }
 // export { loadPyodide }
+
+
+	// link_force.strength(strength || )
+		// forOwn(params, (param_value, param_name) => {
+		// 	console.log(name.toString() + ": " + param_name.toString() + " = " + param_value.toString())
+		// 	link_force[param_name](param_value);			
+		// })

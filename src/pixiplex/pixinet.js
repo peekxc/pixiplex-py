@@ -19,6 +19,13 @@ import { json } from 'd3-fetch';
 // Can also be passed into the renderer directly e.g `autoDetectRenderer({resolution: 1})`
 // AbstractRenderer.defaultOptions.resolution = 5.0;
 
+/**
+ * Generates all k-combinations of n elements
+ * @function
+ * @param {number} n - Total number of elements
+ * @param {number} k - Size of each combination
+ * @returns {Array<Array<number>>} Array of all possible k-combinations
+ */
 export const combinations = (n, k) => {
   const result= [];
   const combos = [];
@@ -34,11 +41,38 @@ export const combinations = (n, k) => {
   return result;
 }
 
+/**
+ * Finds the range (min and max) of an array using an accessor function
+ * @function
+ * @param {Array} arr - Input array
+ * @param {Function} accessor - Function to extract values for comparison
+ * @returns {Array} Array containing [min, max] values
+ */
 export const range = (arr, accessor) => { return [ minBy(arr, accessor), maxBy(arr, accessor)] }
+
+/**
+ * Identity function that returns the input value unchanged
+ * @function
+ * @param {*} val - Input value
+ * @returns {*} The same input value
+ */
 export const identity = (val) => { return val; }
+
+/**
+ * Composes multiple functions into a single function, applying them right-to-left
+ * @function
+ * @param {...Function} fns - Functions to compose
+ * @returns {Function} Composed function
+ */
 export const compose = (...fns) => fns.reduce((f, g) => (...args) => f(g(...args))) // why is this not standard...
 
-// Makes linear scaling functions that take coordinates in [0, 1] -> [w, h] + inverse	
+/**
+ * Creates scaling functions for coordinate transformation between normalized [0,1] and pixel coordinates
+ * @function
+ * @param {number} w - Width in pixels
+ * @param {number} h - Height in pixels
+ * @returns {Object} Object containing scale and invert functions
+ */
 export const make_scale = (w, h) => {
 	const scale_x = scaleLinear().domain([0, 1]).range([0, w]);
 	const scale_y = scaleLinear().domain([0, 1]).range([0, h]);
@@ -47,13 +81,18 @@ export const make_scale = (w, h) => {
 	return { scale: scale_xy, invert: invert_scale_xy };
 }
 
+/** Default styling configuration for network nodes */
 export const NODE_STYLE = { 
 	lineStyle: { size: 1.5, color: 0xFFFFFF },
 	color: 0x650A5A,
 	radius: 6,
 	alpha: 1
 }
+
+/** Default styling configuration for network links/edges */
 export const LINE_STYLE = { lineWidth: 1, color: 0x000000, alpha: 1 }
+
+/** Default styling configuration for polygons */
 export const POLYGON_STYLE = {
 	lineStyle: { size: 1.5, color: 0xFFFFFF },
 	color: 0x650A5A,
@@ -66,17 +105,8 @@ let _default_link_params = {
 	iterations: 1, 
 	id: function(d){ return d.id; } 
 };
-// let _default_manybody_params = { strength: function() { return -30 }, distanceMin: 1, distanceMax: Infinity }
-// let _default_center_params = { x: 0, y: 0 }
-// export const default_sim_params = {
-// 	alpha: 1, 
-// 	force: { // < name > : { enabled: < boolean >, type: < force type >, params: { < force parameters > } }
-// 	  charge: { enabled: true, type: "forceManyBody", params: _default_manybody_params },
-// 	  spring: { enabled: true, type: "forceLink", params: _default_link_params },
-// 	  center: { enabled: true, type: "forceCenter", params: _default_center_params }
-// 	}
-// };
 
+/** Maps force types to their configurable parameters */
 const FORCE_PARAMS = {
   forceManyBody: ['strength', 'theta', 'distanceMin', 'distanceMax'],
   forceLink: ['distance', 'strength', 'iterations'],
@@ -86,9 +116,14 @@ const FORCE_PARAMS = {
   forceY: ['strength', 'y']
 };
 
-// Serializes the forces of a d3-force simulation or a given set of forces
-// This is the opposite of the apply force, i.e. apply_force(sim, serialize_force(sim, ...)) is the identity 
-// * @param  {[type]} 
+/**
+ * Serializes force parameters from a D3 force simulation
+ * @function
+ * @param {Object} sim - D3 force simulation object
+ * @param {Array<string>} force_names - Names of forces to serialize
+ * @param {Array<string>} force_types - Types of forces corresponding to names
+ * @returns {Object} Serialized force configuration
+ */
 export const serialize_force = (sim, force_names, force_types) => {
 	const _force_params = force_names.map((force_name, i) => {
 		const force_type = force_types[i];
@@ -104,7 +139,12 @@ export const serialize_force = (sim, force_names, force_types) => {
 	return fromPairs(_force_params);
 }
 
-// Given a node, export its node style
+/**
+ * Extracts current node styling from a PIXI Graphics object
+ * @function
+ * @param {Graphics} node - PIXI Graphics object representing a node
+ * @returns {Object} Current node style configuration
+ */
 export const current_ns = (node) => {
 	const gd = node.graphicsData[0]
 	let c_ns = { 
@@ -117,6 +157,13 @@ export const current_ns = (node) => {
 	if (isEmpty(c_ns.lineStyle)){ delete c_ns.lineStyle; }
 	return clean(c_ns)
 }
+
+/**
+ * Creates a default node style based on current node properties
+ * @function
+ * @param {Graphics} node - PIXI Graphics object representing a node
+ * @returns {Object} Default node style configuration
+ */
 export const default_ns = (node) => {
 	let c_ns = current_ns(node);
 	let res = NODE_STYLE;
@@ -128,13 +175,24 @@ export const default_ns = (node) => {
 	return res;
 }
 
-// Remove unused keys
+/**
+ * Removes null and undefined properties from an object
+ * @function
+ * @param {Object} obj - Object to clean
+ * @returns {Object} Cleaned object with null/undefined properties removed
+ */
 export const clean = (obj) => {
   Object.keys(obj).forEach((key) => (obj[key] == null) && delete obj[key]);
   return obj;
 }
 
-// Applies simulation settings a d3 force simulation
+/**
+ * Applies simulation parameters to a D3 force simulation
+ * @function
+ * @param {Object} sim - D3 force simulation object
+ * @param {Object} params - Parameters to apply to the simulation
+ * @returns {Object} Modified simulation object
+ */
 export const apply_sim = (sim, params) => {
 	forOwn(params, function(value, key){
 		if (key != "force"){ 
@@ -145,18 +203,14 @@ export const apply_sim = (sim, params) => {
 	return sim
 }
 
-
-// Update force parameters: TODO add to separate methods
-// assign(this?.force_params?.center?.params, { x: this.width / 2, y: this.height / 2 });
-// assign(this?.force_params?.spring?.params, { links: this.links });
-// export const async load_json_graph(json_path){
-// 	return json(json_path).then((graph) => {
-// 		[graph.nodes, graph.links]; 
-// 	});
-// }
-
-// Scales node .x, .y coordinates to the given width w and height h.
-// If nodes have no intrinsic coordinates, they are given random positions.
+/**
+ * Scales node coordinates to fit within specified dimensions
+ * @function
+ * @param {Array} nodes - Array of node objects
+ * @param {number} w - Target width
+ * @param {number} h - Target height
+ * @returns {Array} Array of nodes with scaled coordinates
+ */
 export const scale_nodes = (nodes, w, h) => {
 	// let scale_f = make_scale(w, h);
 	nodes.forEach((node) => { 
@@ -168,7 +222,13 @@ export const scale_nodes = (nodes, w, h) => {
 	return nodes;
 }
 
-// Creates a D3-dispatcher that 
+/**
+ * Creates a ticker system with D3 event dispatcher for animation control
+ * @function
+ * @param {Application} app - PIXI Application instance
+ * @param {Container} stage - PIXI Container for the scene
+ * @returns {Array} Array containing [ticker, dispatcher]
+ */
 export const register_ticker = (app, stage) => {
 	
 	// D3 dispatcher
@@ -185,14 +245,6 @@ export const register_ticker = (app, stage) => {
 	ticker.add((ticker) => {
 		dispatcher.call("tick", this);
 	});
-	// function animate(time){
-	// 	ticker.update(time);
-	// 	app.renderer.render(stage);
-	// 	if (!end_loop) { requestAnimationFrame(animate); }
-	// 	dispatcher.call("tick", this);
-	// 	// console.log(time)
-	// }
-	// dispatcher.on('animate', animate);
 	
 	// Optional minor dispatch that stops the animation frame requests
 	dispatcher.on('stop', function(){ 
@@ -210,25 +262,52 @@ export const register_ticker = (app, stage) => {
 	return [ticker, dispatcher];
 }
 
+/**
+ * Removes all children from a PIXI Container
+ * @function
+ * @param {Container} stage - PIXI Container to clear
+ */
 export const clear_stage = (stage) => {
 	for (var i = stage.children.length - 1; i >= 0; i--) {	
 		stage.removeChild(stage.children[i]);
 	};
 }
 
-// Recreates node Graphics objects
+/**
+ * Creates PIXI Graphics objects for network nodes
+ * @function
+ * @param {Array} nodes - Array of node data objects
+ * @returns {Array} Array of PIXI Graphics objects with node properties
+ */
 export const generate_node_graphics = (nodes) => {
 	return map(nodes, (node) => { return Object.assign(build_node(new Graphics()), node); });
 } 
-// Generate link Graphics object
+
+/**
+ * Creates a PIXI Graphics object for rendering network links
+ * @function
+ * @returns {Graphics} PIXI Graphics object for drawing links
+ */
 export const generate_links_graphic = () => { 
 	return(new Graphics());
 }
+
+/**
+ * Creates PIXI Graphics objects for polygon overlays
+ * @function
+ * @param {Array} polygons - Array of polygon data objects
+ * @returns {Array} Array of polygon objects with attached Graphics instances
+ */
 export const generate_polygon_graphics = (polygons) => {
 	return _.map(polygons, (polygon) => { polygon.gfx = new Graphics(); return polygon; });
 }
 
-// Draws the nodes according to the current style, which can be a single single style or a style per-node
+/**
+ * Applies visual styling to network nodes using PIXI Graphics
+ * @function
+ * @param {Array} nodes - Array of node Graphics objects
+ * @param {Object|Array} ns - Node style configuration (single object or array of styles)
+ */
 export const build_nodes = (nodes, ns) => {
 	if (ns.constructor === Array && ns.length == nodes.length){
 		nodes.forEach((node, i) => { 
@@ -254,9 +333,13 @@ export const build_nodes = (nodes, ns) => {
 	}
 }
 
-// Draw Links according to a given styling, or default style otherwise
-// If the supplied line style is an array, draw links with individual styles.
-// otherwise if the supplied link style is an object, draws all links with that style.
+/**
+ * Renders network links/edges using PIXI Graphics
+ * @function
+ * @param {Array} links - Array of link objects with source and target nodes
+ * @param {Graphics} link_gfx - PIXI Graphics object for drawing links
+ * @param {Object|Array} ls - Link style configuration
+ */
 export const build_links = (links, link_gfx, ls) => {
 	if (ls.constructor === Array && ls.length == links.length){
 		// console.log("Drawing lines as arrays")
@@ -279,17 +362,38 @@ export const build_links = (links, link_gfx, ls) => {
 	}
 }
 
-// ------------ Polygon draw methods ------------
+/**
+ * Internal helper function for drawing polygon shapes
+ * @function
+ * @param {Object} polygon - Polygon object with points or nodes
+ * @param {Graphics} poly_gfx - PIXI Graphics object for drawing
+ * @private
+ */
 export const _build_polygon = (polygon, poly_gfx) => {
 	if (polygon.nodes){ polygon.points = flatMap(polygon.nodes, (node) => { return [node.x, node.y]; }); }
 	poly_gfx.drawPolygon(polygon);
 } 
+
+/**
+ * Renders a single polygon with specified styling
+ * @function
+ * @param {Object} polygon - Polygon object to render
+ * @param {Graphics} poly_gfx - PIXI Graphics object for drawing
+ * @param {Object} ps - Polygon style configuration
+ */
 export const build_polygon = (polygon, poly_gfx, ps = polygon_style) => {
 	poly_gfx.clear();
 	poly_gfx.beginFill(ps.color);
 	_build_polygon(polygon, poly_gfx);
 	poly_gfx.endFill();
 }
+
+/**
+ * Renders multiple polygons with styling
+ * @function
+ * @param {Array} polygons - Array of polygon objects
+ * @param {Object|Array} ps - Polygon style configuration
+ */
 export const build_polygons = (polygons, ps = polygon_style) => {
 	if (ps.constructor === Array && ps.length == polygons.length){
 		polygons.forEach((poly, i) => { build_polygon(poly, poly.gfx, Object.assign(polygon_style, ps[i])) });
@@ -299,7 +403,13 @@ export const build_polygons = (polygons, ps = polygon_style) => {
 	}
 }
 
-
+/**
+ * Registers viewport interaction events to control animation ticker
+ * @function
+ * @param {Object} tick_dispatcher - D3 dispatcher for tick events
+ * @param {Viewport} vp - PIXI Viewport instance
+ * @param {Function} predicate - Condition function for stopping animation
+ */
 export const register_tick_stops = (tick_dispatcher, vp, predicate = function(){ return true; }) => {
 	vp.on('clicked', () => tick_dispatcher.call('restart'))
 	vp.on('drag-start', () => tick_dispatcher.call('restart'))
@@ -313,11 +423,28 @@ export const register_tick_stops = (tick_dispatcher, vp, predicate = function(){
 	}) // only stop if viewport is completely still
 }
 
-// Enables / Disables interactivity of Graphics items 
+/**
+ * Enables interactive behavior for an array of PIXI objects
+ * @function
+ * @param {Array} arr - Array of PIXI objects
+ * @param {Function} acc - Accessor function to get the interactive object
+ */
 export const enable_interactive = (arr, acc = identity) => { arr.forEach((item) => { acc(item).interactive = true }) }
+
+/**
+ * Disables interactive behavior for an array of PIXI objects
+ * @function
+ * @param {Array} arr - Array of PIXI objects
+ * @param {Function} acc - Accessor function to get the interactive object
+ */
 export const disable_interactive = (arr, acc = identity) => { arr.forEach((item) => { acc(item).interactive = false }) }
 
-
+/**
+ * Creates a D3 dispatcher for drag events on a PIXI object
+ * @function
+ * @param {Object} node - PIXI object to make draggable
+ * @returns {Object} D3 dispatcher for drag events
+ */
 export const drag_dispatcher = (node) => {
 	let dsp = dispatch("start", "end", "dragging");
 	node.on('pointerdown', function(e){ 
@@ -335,6 +462,12 @@ export const drag_dispatcher = (node) => {
 	return dsp;
 }
 
+/**
+ * Creates a PIXI drag handler function that can be composed with dispatchers
+ * @function
+ * @param {Object} pixi_obj - PIXI object to enable dragging on
+ * @returns {Function} Drag handler function
+ */
 export const pixi_drag = (pixi_obj) => {
 	if (!pixi_obj.interactive){ pixi_obj.interactive = true; }
 	return function(dispatcher){
@@ -351,35 +484,12 @@ export const pixi_drag = (pixi_obj) => {
 	}
 }
 
-// Enable PIXI dragging for a given PIXI object. The object could be any DisplayObject, 
-// e.g. a graphics object or a container. Returns a dispatcher which can be used to add  
-// event listeners to the start, end, and during drag events 
-// const enable_drag = (dispatcher, pixi_obj) => {
-// 	if (!pixi_obj.interactive){ pixi_obj.interactive = true; }
-// 	let dispatcher = dispatch("start", "end", "dragging");
-// 	pixi_obj.on('pointerdown', function(e){
-// 		// ticker.call('restart');
-// 		if (this.parent.pausePlugin){ this.parent.pausePlugin("drag") };
-// 		Object.assign(this, { data: e.data, alpha: 0.8, dragging: true });
-// 		dispatcher.call("start", this);
-// 	}).on('pointerup', function(e){
-// 		//console.log('pointerup' + e);
-// 		// ticker.call('stop');
-// 		if (this.parent.resumePlugin){ this.parent.resumePlugin("drag") }
-// 		Object.assign(this, { data: null, alpha: 1, dragging: false });
-// 		dispatcher.call("end", this);
-// 	}).on('pointermove', function(){
-// 		if (this.dragging) {
-// 			let ncoords = this.data.getLocalPosition(this.parent);
-// 			// console.log(this);
-// 			this.x = ncoords.x, this.y = ncoords.y;
-// 			dispatcher.call("dragging", this, ncoords);
-// 		}
-// 	});
-// 	return(dispatcher);
-// }
-
-// Enable regular pixi dragging, but attaches standard force-based drag callbacks as well. 
+/**
+ * Creates a force simulation drag handler for physics-based dragging
+ * @function
+ * @param {Object} sim - D3 force simulation instance
+ * @returns {Function} Force drag handler function
+ */
 export const force_drag = (sim) => {
 	return function(dispatcher){
 		dispatcher.on("start.force", function(e){ 
@@ -395,24 +505,37 @@ export const force_drag = (sim) => {
 	}
 }
 
-// ---- PIXI Application stuff ----
-
-// The stage is simply a Container that is the root of the scene graph. 
-// Every child of the stage container will be rendered every frame. 
-// By adding our sprite to the stage, we tell PixiJS's renderer we want to draw it.
-
-// Adds all items in 'arr' to 'stage'. 
-// Accesses elements w/ 'accessor' once before adding (not on tick)
+/**
+ * Adds array of items to a PIXI Container using an accessor function
+ * @function
+ * @param {Container} container - PIXI Container to add items to
+ * @param {Array} arr - Array of items to add
+ * @param {Function} acc - Accessor function to get the displayable object
+ */
 export const add_items = (container, arr, acc = identity) => { 
 	arr.forEach((item) => { container.addChild(acc(item)) }); 
 }
 
+/**
+ * Inserts new nodes into existing node array, creating Graphics objects
+ * @function
+ * @param {Array} nodes - Existing array of node Graphics objects
+ * @param {Array} new_nodes - Array of new node data objects
+ * @returns {Array} Combined array of node Graphics objects
+ */
 export const insert_nodes = (nodes, new_nodes) => {
 	let ins_nodes = generate_node_graphics(differenceBy(new_nodes, nodes, 'id'));
 	return concat(nodes, ins_nodes);
 }
 
-// ---- Updating node / link arrays -----
+/**
+ * Removes nodes and associated links from the network
+ * @function
+ * @param {Array} node_ids - Array of node IDs to remove
+ * @param {Array} nodes - Array of node objects
+ * @param {Array} links - Array of link objects
+ * @param {Container} stage - PIXI Container to remove visual elements from
+ */
 export const remove_nodes = (node_ids, nodes, links, stage) => {
 	remove(links, (link) => {
 		return (includes(node_ids, link.source.id) || includes(node_ids, link.target.id));
@@ -421,9 +544,12 @@ export const remove_nodes = (node_ids, nodes, links, stage) => {
 	removed_nodes.forEach((node) => { stage.removeChild(node) });
 }
 
-
-// ---- Access and setting node/link properties ----
-
+/**
+ * Creates a PIXI Container group from an array of nodes
+ * @function
+ * @param {Array} nodes - Array of node objects to group
+ * @returns {Container} PIXI Container containing all nodes
+ */
 export const make_group = (nodes) => {
 	let container = new Container();
 	nodes.forEach((node) => { container.addChild(node); });
@@ -431,10 +557,20 @@ export const make_group = (nodes) => {
 	return(container);
 }
 
-// Creates a new d3 force simulation 
+/**
+ * Creates a new D3 force simulation instance
+ * @function
+ * @returns {Object} D3 force simulation object
+ */
 export const force_sim = () => { return forceSimulation() }
 
-// Applies default settings to force simulation
+/**
+ * Enables automatic resizing for PIXI application and viewport
+ * @function
+ * @param {Application} app - PIXI Application instance
+ * @param {Viewport} vp - PIXI Viewport instance (optional)
+ * @returns {Function} Resize function
+ */
 export const enable_resize = (app, vp = null) => {
 	app.renderer.autoResize = true;
 	const parent = app.canvas.parentNode; // view => canvas in v8
@@ -446,8 +582,12 @@ export const enable_resize = (app, vp = null) => {
 	return(_resize);
 }
 
-// Resolves link source and target nodes, replacing .source and .target ids with node graphics
-// TODO: remap node indices to 0...n-1, then use log(n) search on the link resolution
+/**
+ * Resolves link references by replacing node IDs with Graphics objects
+ * @function
+ * @param {Array} nodes - Array of node Graphics objects
+ * @param {Array} links - Array of link objects with source/target IDs
+ */
 export const resolve_links = (nodes, links) => {
 	const id_map = fromPairs(nodes.map((node, i) => { return [node.id, i]; }));
 	links.forEach((link) => {
@@ -456,7 +596,12 @@ export const resolve_links = (nodes, links) => {
 	});
 }
 
-// Attach lasso to interaction SVG
+/**
+ * Enables lasso selection functionality for network nodes
+ * @function
+ * @param {string} visRootID - ID of the root visualization element
+ * @returns {Object} D3 dispatcher for lasso selection events
+ */
 export const enable_lasso = (visRootID) => {
 	// const screenScale = window.devicePixelRatio || 1;
 	let dispatcher = dispatch("start", "selected");
@@ -495,43 +640,27 @@ export const enable_lasso = (visRootID) => {
 		interaction_svg.style('display', 'inline');
 		lassoInstance(interaction_svg);
 	});
-	// lassoInstance.on('start', function(lassoPolygon){
-	// 	// Reset node colors ? 
-	// 	dispatcher.call("start");
-	// })
 	
 	return(dispatcher);
 }
 
-// const start_lasso = (nodes, svg_el) => {
-// 	svg_el.style('display', 'inline');
-
-// 	// Reset selected points when starting a new polygon
-// 	const handleLassoStart = (lassoPolygon) => {
-// 		// console.log(lassoPolygon);
-// 		// highlight_nodes([]);
-// 	}
-// 	// Lasso end function
-// 	const handleLassoEnd = (lassoPolygon) => {
-// 		svg_el.style('display', 'none');
-// 		const selected_nodes = nodes.filter((node) => {
-// 			let xy = [ node.x, node.y ];
-// 			return polygonContains(lassoPolygon, xy);
-// 		});
-// 		return(selected_nodes);
-// 	}
-// 	console.log(lasso)
-// 	var lassoInstance = lasso().on('start', handleLassoStart).on('end', handleLassoEnd);
-// 	lassoInstance(svg_el);		
-// }
-
-// Puts a list of items accessed by 'acc' into a container
+/**
+ * Groups items into a PIXI Container using an accessor function
+ * @param {Array} items - Array of items to group
+ * @param {Function} acc - Accessor function to get displayable objects
+ * @returns {Container} PIXI Container containing all items
+ */
 export const group_items = (items, acc = identity) => {
 	let group = new Container();
 	items.forEach((item) => { group.addChild(acc(item)); });
 	return group;
 }
 
+/**
+ * Reads a text file asynchronously using XMLHttpRequest
+ * @param {string} file - Path to the file to read
+ * @param {Function} callback - Callback function to handle file contents
+ */
 export const readTextFile = (file, callback) => {
 	var rawFile = new XMLHttpRequest();
 	rawFile.overrideMimeType("application/json");
@@ -544,7 +673,21 @@ export const readTextFile = (file, callback) => {
 	rawFile.send(null);
 }
 
+/**
+ * Creates a new Pixiplex network visualization instance
+ * @class
+ */
 class Pixiplex {
+	/**
+	 * Creates a new Pixiplex network visualization instance
+	 * @constructor 
+	 * @param {Array} nodes - Array of node data objects
+	 * @param {Array} links - Array of link data objects
+	 * @param {number} width - Canvas width in pixels
+	 * @param {number} height - Canvas height in pixels
+	 * @param {number} scale - Scaling factor for the viewport
+	 * @param {Object} forces - Configuration for physics forces
+	 */
 	constructor(nodes = [], links = [], width = 250, height = 250, scale = 2.0, forces = {}){
 		this.width = width
 		this.height = height
@@ -560,21 +703,17 @@ class Pixiplex {
 		this.line_style = LINE_STYLE;	// mandatory, lines are redrawn using this 
 		this.polygon_style = POLYGON_STYLE;
 		
-		// Default force parameters
-		// < name > : { enabled: < boolean >, type: < force type >, params: { < force parameters > } }
-		// this.force_params = default_sim_params.force;
 		this.forces = forces;
-		// 	charge: { enabled: true, type: "forceManyBody", params: { strength: function() { return -30 }, distanceMin: 1, distanceMax: Infinity } },
-		// 	spring: { enabled: true, type: "forceLink", params: { distance: 30, iterations: 1, id: function(d){ return d.id; } } },
-		// 	center: { enabled: true, type: "forceCenter", params: { x: 0, y: 0 } }
-		// }
-		// this.sim = null
-		// this.sim_params = null // the force simulation + parameters
 	}
-	// Update force parameters: TODO add to separate methods
-	// assign(this?.force_params?.center?.params, { x: this.width / 2, y: this.height / 2 });
-	// assign(this?.force_params?.spring?.params, { links: this.links });
 
+	/**
+	 * Initializes the visualization with PIXI application, viewport, and force simulation
+	 * @async
+	 * @method init
+	 * @memberof Pixiplex
+	 * @param {boolean} drag - Whether to enable node dragging
+	 * @param {boolean} center - Whether to center the graph initially
+	 */
 	async init(drag = true, center = true){
 			// Pixi & viewport related initializations
 			await this._init_application();
@@ -598,319 +737,405 @@ class Pixiplex {
 			if (center) { this.center_graph(true); }
 	}
 
-	
-	// Should be called once. Creates members: 
-	// - app 
-	// - view
-	async _init_application(options){
-		// this.view = document.createElement('canvas');
-		// this.view.width = this.width;
-		// this.view.height = this.height;
-		// this.view.style.width = this.width + 'px'
-		// this.view.style.height = this.height + 'px'
-		// set_dpi(this.view, 288);
-		// console.log(this.view.width);
-		this.app = new Application();
-		this.pixel_ratio = devicePixelRatio;
-		// const ratio = 1.0;
-		let app_params = {
-			// canvas: this.view,
-			width: this.width,  // NOTE: this is preferred over making own canvas!
-			height: this.height,
-			antialias: true, 
-			backgroundColor: 0xededed, 
-			resolution: this.pixel_ratio,  // NOTE: world coordinate calculations are affected by resolution!
-			// resolution: 1.0,
-			sharedTicker: true, // 
-			transparent: true,
-			autoResize: false, // might be needed for resolution 
-			// resizeTo: this.view,
-			forceCanvas: false, // NOTE: this can force CPU? 
-			autoStart: false, // <- note the animation updates won't be immediate! 
-			autoDensity: true,  // this acts as autoResize
-			failIfMajorPerformanceCaveat: true
-		}
-		await this.app.init(assign(app_params, options));
-		this.view = this.app.canvas
-		this.view.style.width = this.width
-		this.view.style.height = this.height
-		this.view.style.left = 0
-		this.view.style.top = 0
-		// this.view.width = this.width
-		// this.view.height = this.height
-		this.view.onwheel = function(event){ event.preventDefault(); };
-		this.view.onmousewheel = function(event){ event.preventDefault(); };
+	/**
+ * Initializes the PixiJS application with specified rendering parameters
+ * @async
+ * @method
+ * @memberof Pixiplex
+ * @param {Object} options - Additional application configuration options
+ * @param {number} options.width - Canvas width override
+ * @param {number} options.height - Canvas height override
+ * @param {boolean} options.antialias - Enable antialiasing
+ * @param {number} options.backgroundColor - Background color as hex value
+ * @param {number} options.resolution - Pixel density ratio for high-DPI displays
+ * @param {boolean} options.transparent - Enable canvas transparency
+ * @param {boolean} options.autoResize - Enable automatic canvas resizing
+ * @param {boolean} options.forceCanvas - Force canvas rendering over WebGL
+ * @param {boolean} options.autoStart - Enable automatic ticker start
+ * @param {boolean} options.autoDensity - Enable automatic density adjustment
+ * @param {boolean} options.failIfMajorPerformanceCaveat - Fail if major performance issues detected
+ * @returns {Promise<void>}
+ */
+async _init_application(options){
+	// this.view = document.createElement('canvas');
+	// this.view.width = this.width;
+	// this.view.height = this.height;
+	// this.view.style.width = this.width + 'px'
+	// this.view.style.height = this.height + 'px'
+	// set_dpi(this.view, 288);
+	// console.log(this.view.width);
+	this.app = new Application();
+	this.pixel_ratio = devicePixelRatio;
+	// const ratio = 1.0;
+	let app_params = {
+		// canvas: this.view,
+		width: this.width,  // NOTE: this is preferred over making own canvas!
+		height: this.height,
+		antialias: true, 
+		backgroundColor: 0xededed, 
+		resolution: this.pixel_ratio,  // NOTE: world coordinate calculations are affected by resolution!
+		// resolution: 1.0,
+		sharedTicker: true, // 
+		transparent: true,
+		autoResize: false, // might be needed for resolution 
+		// resizeTo: this.view,
+		forceCanvas: false, // NOTE: this can force CPU? 
+		autoStart: false, // <- note the animation updates won't be immediate! 
+		autoDensity: true,  // this acts as autoResize
+		failIfMajorPerformanceCaveat: true
 	}
+	await this.app.init(assign(app_params, options));
+	this.view = this.app.canvas
+	this.view.style.width = this.width
+	this.view.style.height = this.height
+	this.view.style.left = 0
+	this.view.style.top = 0
+	// this.view.width = this.width
+	// this.view.height = this.height
+	this.view.onwheel = function(event){ event.preventDefault(); };
+	this.view.onmousewheel = function(event){ event.preventDefault(); };
+}
 
-	// Create a viewport to handle panning, dragging, etc.
-	// for pixi v8, see: https://github.com/davidfig/pixi-viewport/issues/488. 
-	// - vp 
-	async _init_viewport(){
-		if (Object.hasOwn(this, "app")){
-			// const zoomScale = this.pixel_ratio * this.scale;
-			const zoomScale = this.scale;
-			this.vp = new Viewport({
-				screenWidth: this.width, 
-				screenHeight: this.height,
-				worldWidth: zoomScale * this.width, 
-				worldHeight: zoomScale * this.height,
-				events: this.app.renderer.events,  // this changed; app must be initialized
-				threshold: 10,  // number of pixels to move to trigger an input event 
-				// stopPropagation: true, 
-				// interaction: app.renderer.plugins.interaction
-			});
-			// this.vp = create_viewport(this.app, this.width, this.height, zoomScale * this.width, zoomScale * this.height);
-			const vp_params = {
-				clampZoom: { minWidth: this.width/zoomScale, maxWidth: this.width*zoomScale, minHeight: this.height/zoomScale, maxHeight: this.height*zoomScale }
-			}
-			// Clamp gets rid of panning !.clamp({ direction: 'all'})
-			this.vp
-				.drag({ wheel: false })
-				.pinch()
-				.wheel(1e-3)
-				.clamp({ direction: 'all'})
-				.clampZoom(vp_params.clampZoom)
-				.decelerate();
-			// this.vp.drag().wheel(1e-3).clamp({ direction: 'all'}).clampZoom(vp_params.clampZoom).decelerate();		
-			this.app.stage.addChild(this.vp)
-			return this.vp; 
+/**
+ * Creates and configures a viewport for handling pan, zoom, and drag interactions
+ * Uses pixi-viewport library for managing world-to-screen coordinate transformations
+ * @async
+ * @returns {Promise<Viewport>} The configured viewport instance
+ */
+async _init_viewport(){
+	if (Object.hasOwn(this, "app")){
+		// const zoomScale = this.pixel_ratio * this.scale;
+		const zoomScale = this.scale;
+		this.vp = new Viewport({
+			screenWidth: this.width, 
+			screenHeight: this.height,
+			worldWidth: zoomScale * this.width, 
+			worldHeight: zoomScale * this.height,
+			events: this.app.renderer.events,  // this changed; app must be initialized
+			threshold: 10,  // number of pixels to move to trigger an input event 
+			// stopPropagation: true, 
+			// interaction: app.renderer.plugins.interaction
+		});
+		// this.vp = create_viewport(this.app, this.width, this.height, zoomScale * this.width, zoomScale * this.height);
+		const vp_params = {
+			clampZoom: { minWidth: this.width/zoomScale, maxWidth: this.width*zoomScale, minHeight: this.height/zoomScale, maxHeight: this.height*zoomScale }
 		}
+		// Clamp gets rid of panning !.clamp({ direction: 'all'})
+		this.vp
+			.drag({ wheel: false })
+			.pinch()
+			.wheel(1e-3)
+			.clamp({ direction: 'all'})
+			.clampZoom(vp_params.clampZoom)
+			.decelerate();
+		// this.vp.drag().wheel(1e-3).clamp({ direction: 'all'}).clampZoom(vp_params.clampZoom).decelerate();		
+		this.app.stage.addChild(this.vp)
+		return this.vp; 
 	}
-	
-	/** Initializes the pixi.js ticker and d3-dispatcher */
-	_init_ticker(){
-		const [ticker, dispatcher] = register_ticker(this.app, this.vp); // the (pixi) simulation tick
-		this.ticker = ticker 				 // pixi.js ticker
-		this.dispatcher = dispatcher // d3-dispatcher
-	}
+}
 
-	
-	// Initialize Graphics(); should be called after graph is initialized
-	// Modifies the links in-place to point to nodes
-	_init_graphics(nodes, links){
-		if (Object.hasOwn(this, "nodes") && Object.hasOwn(this, "links")){
-			// First: add (x,y) coordinates to nodes, if not given, and scale them by the width/height
-			scale_nodes(nodes, this.width, this.height)
-			// this.nodes_gfx = generate_node_graphics(nodes);
-			
-			// Merge new Graphics instances w/ node attributes, then 'build' by apply the styling
-			this.nodes_gfx = map(nodes, (node) => { return assign(new Graphics(), node); })
-			build_nodes(this.nodes_gfx, this.node_style)
-			
-			// Populate the links with node graphic references	(used to be resolve_links)
-			const id_map = fromPairs(this.nodes_gfx.map((node, i) => { return [node.id, i]; }));
-			links.forEach((link) => {
-				link.source = link.source instanceof Graphics ? link.source : this.nodes_gfx[id_map[link.source]];
-				link.target = link.target instanceof Graphics ? link.target : this.nodes_gfx[id_map[link.target]];
-			});
-			this.links_gfx = generate_links_graphic();
-			build_links(links, this.links_gfx, this.line_style);
-		}
-		return [this.nodes_gfx, this.links_gfx];
-	}
+/**
+ * Initializes the PixiJS ticker and D3 event dispatcher for animation and event handling
+ * Registers the ticker with the application and viewport for synchronized updates
+ */
+_init_ticker(){
+	const [ticker, dispatcher] = register_ticker(this.app, this.vp); // the (pixi) simulation tick
+	this.ticker = ticker 				 // pixi.js ticker
+	this.dispatcher = dispatcher // d3-dispatcher
+}
 
-		/** Initializes an stopped, empty d3-force simulation. */
-	_init_force(sim_options){
-		if (!Object.hasOwn(this, "sim")){ 
-			console.log("Enabling force simulation");
-			this.sim = forceSimulation(this.nodes_gfx); 
-			this.sim.stop();
-			this.sim.alpha(1.0); // no restart needed
-		}
-
-		// Apply default forces if not given
-		// if (typeof sim_options == 'undefined'){ 
-		// 	console.log("Using default force settings");
-		// 	const c_x = (this.width * this.scale) / 2; 
-		// 	const c_y = (this.height * this.scale) / 2; 
-		// 	apply_sim(this.sim, default_sim_params)
-		// 	apply_force(this.sim, default_sim_params.force)
-		// 	this.sim.force('center').x(c_x).y(c_y);
-		// 	this.sim.force('spring').links(this.links);
-		// } else {
-		// 	console.log("Applying force settings: ", sim_options);
-		// 	apply_sim(this.sim, sim_options)
-		// 	apply_force(this.sim, sim_options.force)
-		// }
-		this.enable_force();
-	};
-
-	
-	// sync_forces(fn){
-	// 	const force_names = fn ? fn : Object.keys(this.forces); 
-	// 	const force_types = map(this.forces, (value, key) => { return value.type; });
-	// 	console.log(this.forces);
-	// 	this.force_params = merge(this.forces, serialize_force(this.sim, force_names, force_types));
-	// }
-
-	// Register the dragging callbacks for the nodes
-	enable_drag(){
-		if (!Object.hasOwn(this, "nodes_gfx")){ return false; }
-
-		// Make sure the viewport is interactive
-		this.vp.interactive = true; 
-		this.vp.visible = true; 
-		// this.vp.hitArea = this.vp.getBounds();
+/**
+ * Initializes graphics objects for nodes and links, applying styling and establishing references
+ * Scales node coordinates to fit viewport dimensions and resolves link source/target references
+ * @param {Array<Object>} nodes - Array of node objects with id, x, y properties
+ * @param {Array<Object>} links - Array of link objects with source, target references
+ * @returns {Array<Array>} Tuple containing [nodes_gfx, links_gfx] graphics arrays
+ */
+_init_graphics(nodes, links){
+	if (Object.hasOwn(this, "nodes") && Object.hasOwn(this, "links")){
+		// First: add (x,y) coordinates to nodes, if not given, and scale them by the width/height
+		scale_nodes(nodes, this.width, this.height)
+		// this.nodes_gfx = generate_node_graphics(nodes);
 		
-		// From: https://pixijs.com/8.x/examples/events/dragging
-		let dragTarget = null;
-		let viewport = this.vp; 
-		let dispatcher = this.dispatcher;
-		let sim = this.sim;
-
-		function onDragMove(event, node){
-			// this == viewport
-			if (dragTarget) {
-				dragTarget.parent.toLocal(event.global, null, dragTarget.position);
-				dragTarget.fx = dragTarget.position.x
-				dragTarget.fy = dragTarget.position.y; 
-				// dispatcher.call("dragging.force")
-			}
-		}
-		function onDragStart(node){
-			viewport.plugins.get("drag").pause();
-			dragTarget = this;
-			viewport.on('pointermove', onDragMove);
-			
-			// Force-related 
-			dragTarget.fx = dragTarget.x; dragTarget.fy = dragTarget.y; 
-			sim?.alphaTarget(0.3)?.restart();
-			// dispatcher.call("start.force")
-		}
-    function onDragEnd(){
-			if (dragTarget){
-				sim?.alphaTarget(0);
-				dragTarget.fx = null; dragTarget.fy = null; 
-
-				viewport.off('pointermove', onDragMove);
-				dragTarget = null;
-			}
-			// dispatcher.call("end.force")
-			viewport.plugins.get("drag").resume();
-    };
-
-		// Attach a pointerdown event to every node and pointer up to the viewport
-		this.vp.on('pointerup', onDragEnd);
-    this.vp.on('pointerupoutside', onDragEnd);
-		this.nodes_gfx.forEach((node) => {
-			// compose(pixi_drag(node))(drag_dispatcher(node));
-			node.interactive = true; 
-			node.on("pointerdown", onDragStart, node);
+		// Merge new Graphics instances w/ node attributes, then 'build' by apply the styling
+		this.nodes_gfx = map(nodes, (node) => { return assign(new Graphics(), node); })
+		build_nodes(this.nodes_gfx, this.node_style)
+		
+		// Populate the links with node graphic references	(used to be resolve_links)
+		const id_map = fromPairs(this.nodes_gfx.map((node, i) => { return [node.id, i]; }));
+		links.forEach((link) => {
+			link.source = link.source instanceof Graphics ? link.source : this.nodes_gfx[id_map[link.source]];
+			link.target = link.target instanceof Graphics ? link.target : this.nodes_gfx[id_map[link.target]];
 		});
-		return true;
+		this.links_gfx = generate_links_graphic();
+		build_links(links, this.links_gfx, this.line_style);
+	}
+	return [this.nodes_gfx, this.links_gfx];
+}
+
+/**
+ * Initializes a D3 force simulation with the node graphics as simulation subjects
+ * Creates a stopped simulation with alpha set to 1.0 for manual control
+ * @param {Object} sim_options - Configuration options for the force simulation
+ */
+_init_force(sim_options){
+	if (!Object.hasOwn(this, "sim")){ 
+		console.log("Enabling force simulation");
+		this.sim = forceSimulation(this.nodes_gfx); 
+		this.sim.stop();
+		this.sim.alpha(1.0); // no restart needed
 	}
 
-	disable_drag(){
-		console.log("disabling drag");
-		this.nodes_gfx.forEach((node) => {
-			node.interactive = false; 
-			// node.on("pointerdown", null);
-		});
-	}
-
-
-	enable_force(){
-		this.dispatcher.on("tick.force", () => {
-			this.sim.tick(); 
-		});
-		// Attach dispatchers for force events
-		// force_drag(this.sim)(this.dispatcher);
-	}
-
-	disable_force(){
-		this.dispatcher.on("tick.force", null);
-	}
-
-	// TODO: debug centering, experiment w/ different kinds of recenterings
-	// For w/e reasons, fit and moveCorner seem to apply to different coordinate systems?
-	center_graph(fit = true, x = undefined, y = undefined){
-		const num_nodes = this.nodes_gfx.length;
-		const mean_x = sum(this.nodes_gfx.map((node) => { return node.x; })) / num_nodes;
-		const mean_y = sum(this.nodes_gfx.map((node) => { return node.y; })) / num_nodes;
-		console.log("Graph center: ", mean_x, mean_y);
-
-		this.sim?.stop();
-		const c_x = typeof x !== "undefined" ? x : (this.vp.worldWidth) / 2;
-		const c_y = typeof y !== "undefined" ? y : (this.vp.worldHeight) / 2;
-		for (let i = 0; i < this.nodes_gfx.length; i++) {
-			this.nodes_gfx[i].position.x -= mean_x;
-			this.nodes_gfx[i].position.y -= mean_y;
-			this.nodes_gfx[i].position.x += c_x;
-			this.nodes_gfx[i].position.y += c_y;
-		}
-		if (fit){
-			this.vp.fit(false, this.width, this.height);
-			// this.vp.moveCorner(this.width / this.scale, this.height / this.scale); // For w/e reason, moveCenter is bugged
-		}
-		this.vp.moveCenter(c_x, c_y);
-		this.sim?.force('center')?.x(c_x).y(c_y);
-		this.sim?.restart();
-		// this.app.renderer.render(this.app.stage);
-	}
-
-	force_center(name = "center", x = undefined, y = undefined){
-		const xc = (x === undefined) ? this.width / 2 : x; 
-		const yc = (y === undefined) ? this.height / 2 : y; 
-		this.sim.force(name, forceCenter(xc, yc)); // register the link force
-	};
-
-	force_link(name = "spring", distance = undefined, strength = undefined, iterations = undefined){
-		let link_force = forceLink(this.links).id((d) => d.id);
-		link_force.distance(distance || 30);
-		if (strength !== undefined){
-			link_force.strength(strength)
-		}
-		link_force.iterations(iterations || 1);
-		this.sim.force(name, link_force); // register the link force
-	};
-
-	force_manybody(name = "charge", strength = undefined, theta = undefined, distanceMin = undefined, distanceMax = undefined){
-		let nbody_force = forceManyBody();
-		nbody_force.strength(strength || -30);
-		nbody_force.theta(theta || 0.90);
-		nbody_force.distanceMin(strength || 1.0);
-		nbody_force.distanceMax(strength || Infinity);
-		this.sim.force(name, nbody_force); // register the link force
-	};
-
-	// Meta-function for applying force settings on a d3 force simulation object
-	apply_force(params){
-		if (!Object.hasOwn(this, "sim")){ return false; }
-		console.log("force params", params)
-		forOwn(params, function(settings, force_name){
-			console.log("Applying force simulation parameters")
-			console.log(settings, force_name)
-			force_enabled = Object.hasOwn(settings, "enabled") || settings.enabled
-			if (!force_enabled){ return;}	
-			if (settings.type == "forceCenter"){
-				this.force_center(force_name, settings.x, settings.y);
-			} else if (settings.type == "forceManyBody"){
-				this.force_manybody(force_name, strength, theta, distanceMin, distanceMax);
-			}
-			
-				// settings.params
-				// // Sets up force with default setting
-				// this.sim.force(forcename, d3_force[settings.type]());
-				
-				// // Apply the given parameter settings
-				// forOwn(settings.params, function(param_value, param_name){
-				// 	console.log(forcename.toString() + ": " + param_name.toString() + " = " + param_value.toString())
-				// 	this.sim.force(forcename)[param_name](param_value);			
-				// })
-		})
-		return sim
-	}
-
-	// // TODO: figure out how to do array 
-	// node_radii(r){
-	// 	const new_style = { ...NODE_STYLE, radius: r };
-	// 	build_nodes(pp.nodes_gfx, new_style);
+	// Apply default forces if not given
+	// if (typeof sim_options == 'undefined'){ 
+	// 	console.log("Using default force settings");
+	// 	const c_x = (this.width * this.scale) / 2; 
+	// 	const c_y = (this.height * this.scale) / 2; 
+	// 	apply_sim(this.sim, default_sim_params)
+	// 	apply_force(this.sim, default_sim_params.force)
+	// 	this.sim.force('center').x(c_x).y(c_y);
+	// 	this.sim.force('spring').links(this.links);
+	// } else {
+	// 	console.log("Applying force settings: ", sim_options);
+	// 	apply_sim(this.sim, sim_options)
+	// 	apply_force(this.sim, sim_options.force)
 	// }
+	this.enable_force();
+}
+
+/**
+ * Enables drag interaction for all node graphics in the visualization
+ * Implements pointer-based dragging with viewport pause/resume and force simulation integration
+ * @returns {boolean} True if drag was successfully enabled, false if nodes_gfx not available
+ */
+enable_drag(){
+	if (!Object.hasOwn(this, "nodes_gfx")){ return false; }
+
+	// Make sure the viewport is interactive
+	this.vp.interactive = true; 
+	this.vp.visible = true; 
+	// this.vp.hitArea = this.vp.getBounds();
+	
+	// From: https://pixijs.com/8.x/examples/events/dragging
+	let dragTarget = null;
+	let viewport = this.vp; 
+	let dispatcher = this.dispatcher;
+	let sim = this.sim;
+
+	/**
+	 * Handles pointer move events during drag operations
+	 * @param {PointerEvent} event - The pointer move event
+	 * @param {Graphics} node - The node being dragged
+
+	 */
+	function onDragMove(event, node){
+		// this == viewport
+		if (dragTarget) {
+			dragTarget.parent.toLocal(event.global, null, dragTarget.position);
+			dragTarget.fx = dragTarget.position.x
+			dragTarget.fy = dragTarget.position.y; 
+			// dispatcher.call("dragging.force")
+		}
+	}
+
+	/**
+	 * Initiates drag operation for a node
+	 * @param {Graphics} node - The node to start dragging
+
+	 */
+	function onDragStart(node){
+		viewport.plugins.get("drag").pause();
+		dragTarget = this;
+		viewport.on('pointermove', onDragMove);
+		
+		// Force-related 
+		dragTarget.fx = dragTarget.x; dragTarget.fy = dragTarget.y; 
+		sim?.alphaTarget(0.3)?.restart();
+		// dispatcher.call("start.force")
+	}
+
+	/**
+	 * Ends drag operation and resumes viewport interaction
+
+	 */
+	function onDragEnd(){
+		if (dragTarget){
+			sim?.alphaTarget(0);
+			dragTarget.fx = null; dragTarget.fy = null; 
+
+			viewport.off('pointermove', onDragMove);
+			dragTarget = null;
+		}
+		// dispatcher.call("end.force")
+		viewport.plugins.get("drag").resume();
+	}
+
+	// Attach a pointerdown event to every node and pointer up to the viewport
+	this.vp.on('pointerup', onDragEnd);
+	this.vp.on('pointerupoutside', onDragEnd);
+	this.nodes_gfx.forEach((node) => {
+		// compose(pixi_drag(node))(drag_dispatcher(node));
+		node.interactive = true; 
+		node.on("pointerdown", onDragStart, node);
+	});
+	return true;
+}
+
+/**
+ * Disables drag interaction for all node graphics
+ * Sets interactive property to false for all nodes
+ */
+disable_drag(){
+	console.log("disabling drag");
+	this.nodes_gfx.forEach((node) => {
+		node.interactive = false; 
+		// node.on("pointerdown", null);
+	});
+}
+
+/**
+ * Enables force simulation by connecting the dispatcher tick event to simulation updates
+ */
+enable_force(){
+	this.dispatcher.on("tick.force", () => {
+		this.sim.tick(); 
+	});
+	// Attach dispatchers for force events
+	// force_drag(this.sim)(this.dispatcher);
+}
+
+/**
+ * Disables force simulation by removing the tick event handler
+ */
+disable_force(){
+	this.dispatcher.on("tick.force", null);
+}
+
+/**
+ * Centers the graph visualization by translating all nodes to the viewport center
+ * Optionally fits the graph to the viewport bounds and updates force simulation center
+ * @param {boolean} [fit=true] - Whether to fit the graph to viewport bounds
+ * @param {number} [x] - Custom x-coordinate for center (defaults to viewport center)
+ * @param {number} [y] - Custom y-coordinate for center (defaults to viewport center)
+ */
+center_graph(fit = true, x = undefined, y = undefined){
+	const num_nodes = this.nodes_gfx.length;
+	const mean_x = sum(this.nodes_gfx.map((node) => { return node.x; })) / num_nodes;
+	const mean_y = sum(this.nodes_gfx.map((node) => { return node.y; })) / num_nodes;
+	console.log("Graph center: ", mean_x, mean_y);
+
+	this.sim?.stop();
+	const c_x = typeof x !== "undefined" ? x : (this.vp.worldWidth) / 2;
+	const c_y = typeof y !== "undefined" ? y : (this.vp.worldHeight) / 2;
+	for (let i = 0; i < this.nodes_gfx.length; i++) {
+		this.nodes_gfx[i].position.x -= mean_x;
+		this.nodes_gfx[i].position.y -= mean_y;
+		this.nodes_gfx[i].position.x += c_x;
+		this.nodes_gfx[i].position.y += c_y;
+	}
+	if (fit){
+		this.vp.fit(false, this.width, this.height);
+		// this.vp.moveCorner(this.width / this.scale, this.height / this.scale); // For w/e reason, moveCenter is bugged
+	}
+	this.vp.moveCenter(c_x, c_y);
+	this.sim?.force('center')?.x(c_x).y(c_y);
+	this.sim?.restart();
+	// this.app.renderer.render(this.app.stage);
+}
+
+/**
+ * Adds a centering force to the simulation that pulls nodes toward a specified point
+ * @param {string} [name="center"] - Name identifier for the force
+ * @param {number} [x] - X-coordinate for center point (defaults to viewport center)
+ * @param {number} [y] - Y-coordinate for center point (defaults to viewport center)
+ */
+force_center(name = "center", x = undefined, y = undefined){
+	const xc = (x === undefined) ? this.width / 2 : x; 
+	const yc = (y === undefined) ? this.height / 2 : y; 
+	this.sim.force(name, forceCenter(xc, yc)); // register the link force
+}
+
+/**
+ * Adds a spring force to the simulation that maintains desired distances between linked nodes
+ * @param {string} [name="spring"] - Name identifier for the force
+ * @param {number} [distance] - Desired distance between linked nodes
+ * @param {number} [strength] - Strength of the spring force
+ * @param {number} [iterations] - Number of iterations for force calculation
+ */
+force_link(name = "spring", distance = undefined, strength = undefined, iterations = undefined){
+	let link_force = forceLink(this.links).id((d) => d.id);
+	link_force.distance(distance || 30);
+	if (strength !== undefined){
+		link_force.strength(strength)
+	}
+	link_force.iterations(iterations || 1);
+	this.sim.force(name, link_force); // register the link force
+}
+
+/**
+ * Adds a many-body force to the simulation that simulates attractive or repulsive forces between all nodes
+ * @param {string} [name="charge"] - Name identifier for the force
+ * @param {number} [strength] - Strength of the force (negative for repulsion, positive for attraction)
+ * @param {number} [theta] - Barnes-Hut approximation parameter for performance optimization
+ * @param {number} [distanceMin] - Minimum distance for force calculation
+ * @param {number} [distanceMax] - Maximum distance for force calculation
+ */
+force_manybody(name = "charge", strength = undefined, theta = undefined, distanceMin = undefined, distanceMax = undefined){
+	let nbody_force = forceManyBody();
+	nbody_force.strength(strength || -30);
+	nbody_force.theta(theta || 0.90);
+	nbody_force.distanceMin(strength || 1.0);
+	nbody_force.distanceMax(strength || Infinity);
+	this.sim.force(name, nbody_force); // register the link force
+}
+
+/**
+ * Applies force configuration parameters to the simulation
+ * Parses force settings object and applies appropriate force types with their parameters
+ * @param {Object} params - Force configuration object with force names as keys
+ * @param {Object} params.forceName - Individual force configuration
+ * @param {string} params.forceName.type - Type of force (e.g., "forceCenter", "forceManyBody")
+ * @param {boolean} params.forceName.enabled - Whether the force is enabled
+ * @param {number} params.forceName.x - X-coordinate for center forces
+ * @param {number} params.forceName.y - Y-coordinate for center forces
+ * @returns {boolean} False if simulation not available, simulation object otherwise
+ */
+apply_force(params){
+	if (!Object.hasOwn(this, "sim")){ return false; }
+	console.log("force params", params)
+	forOwn(params, function(settings, force_name){
+		console.log("Applying force simulation parameters")
+		console.log(settings, force_name)
+		force_enabled = Object.hasOwn(settings, "enabled") || settings.enabled
+		if (!force_enabled){ return;}	
+		if (settings.type == "forceCenter"){
+			this.force_center(force_name, settings.x, settings.y);
+		} else if (settings.type == "forceManyBody"){
+			this.force_manybody(force_name, strength, theta, distanceMin, distanceMax);
+		}
+		
+			// settings.params
+			// // Sets up force with default setting
+			// this.sim.force(forcename, d3_force[settings.type]());
+			
+			// // Apply the given parameter settings
+			// forOwn(settings.params, function(param_value, param_name){
+			// 	console.log(forcename.toString() + ": " + param_name.toString() + " = " + param_value.toString())
+			// 	this.sim.force(forcename)[param_name](param_value);			
+			// })
+	})
+	return sim
+}
+
+// // TODO: figure out how to do array 
+// node_radii(r){
+// 	const new_style = { ...NODE_STYLE, radius: r };
+// 	build_nodes(pp.nodes_gfx, new_style);
+// }
 
 }
 
-
-// export { select }
+// Export statements for utility functions and classes
 export { map, forOwn, remove, concat, filter, unionBy, unionWith, pullAllBy, pullAllWith, intersectionWith, differenceBy, differenceWith, transform, includes, isEmpty, merge, flatMap}
 export { Application, Graphics, GraphicsContext, Polygon, Text, Ticker, Container, Viewport }
 export { Pixiplex }
@@ -919,8 +1144,8 @@ export { d3_force }
 // export { loadPyodide }
 
 
-	// link_force.strength(strength || )
-		// forOwn(params, (param_value, param_name) => {
-		// 	console.log(name.toString() + ": " + param_name.toString() + " = " + param_value.toString())
-		// 	link_force[param_name](param_value);			
-		// })
+// link_force.strength(strength || )
+	// forOwn(params, (param_value, param_name) => {
+	// 	console.log(name.toString() + ": " + param_name.toString() + " = " + param_value.toString())
+	// 	link_force[param_name](param_value);			
+	// })

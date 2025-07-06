@@ -1,0 +1,46 @@
+{{>main}}
+
+{{#*inline "main"}}
+{{>all-docs~}}
+{{/inline}}
+
+{{#*inline "type"}}{{#if type}}{{#if type.names}}{{#each type.names}}{{#unless @first}} | {{/unless}}{{this}}{{/each}}{{else}}{{type}}{{/if}}{{else}}any{{/if}}{{/inline}}
+
+{{#*inline "all-docs"}}
+{{>function~}}
+{{/inline}}
+
+{{#*inline "function"}}
+{{#functions}}
+
+## {{name}}
+
+<p class="mkapi-object mkapi-page-source" id={{name}}>
+<span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">{{name}}</span>(
+	{{#if params}}
+	{{#each params}}{{#unless @first}}, {{/unless}}
+	<span class="mkapi-arg">{{name}}</span>: <span class="mkapi-ann">{{>type}}</span>{{#if defaultvalue}} = <span class="mkapi-default">{{defaultvalue}}</span>{{/if}}
+	{{/each}}
+	{{/if}})
+	{{#if returns}} -> 
+		{{#each returns}}
+			<span class="mkapi-ann">{{>type}}</span>
+		{{/each}}
+	{{/if}}
+</p>
+{{#if description}}
+<div class="mkapi-document"> 
+	<p>{{description}}</p>
+	{{#if params}}
+		<h3>Parameters:</h3>
+		<ul>
+		{{#each params}}
+			<li> {{name}} - {{#if description}}{{description}}{{/if}} </li>
+		{{/each}}
+		</ul>
+	{{/if}}
+</div>
+{{/if}}
+
+{{/functions}}
+{{/inline}}

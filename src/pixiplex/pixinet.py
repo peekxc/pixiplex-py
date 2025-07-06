@@ -98,7 +98,14 @@ class ForceConfig:
 		self.forces: dict[str, Any] = {}
 
 	def center(self, name: str = "center", **kwargs) -> "ForceConfig":
-		"""Add center force."""
+		"""Add center force.
+
+		Parameters:
+			name: force name.
+			x: x-position of the centering force.
+			y: y-position of the centering force.
+			strength: relative strength of the centering force.
+		"""
 		self.forces[name] = {"type": "forceCenter", "enabled": True, "params": asdict(ForceCenter(**kwargs))}
 		return self
 
@@ -210,10 +217,9 @@ class Pixinet(anywidget.AnyWidget):
 		self.send({"type": "msg:sync_node_coordinates"})
 		return self._y
 
-	def restart():
-		
-	# @x.setter
-	# def x(self, value: ArrayLike):
-	# 	value = np.atleast_1d(value).astype(np.float32).ravel()
-	# 	assert len(value) == len(self.node_ids)
-	# 	self._x = value
+	# def restart():
+	# # @x.setter
+	# # def x(self, value: ArrayLike):
+	# # 	value = np.atleast_1d(value).astype(np.float32).ravel()
+	# # 	assert len(value) == len(self.node_ids)
+	# # 	self._x = value

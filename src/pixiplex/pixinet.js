@@ -756,383 +756,393 @@ class Pixiplex {
  * @param {boolean} options.failIfMajorPerformanceCaveat - Fail if major performance issues detected
  * @returns {Promise<void>}
  */
-async _init_application(options){
-	// this.view = document.createElement('canvas');
-	// this.view.width = this.width;
-	// this.view.height = this.height;
-	// this.view.style.width = this.width + 'px'
-	// this.view.style.height = this.height + 'px'
-	// set_dpi(this.view, 288);
-	// console.log(this.view.width);
-	this.app = new Application();
-	this.pixel_ratio = devicePixelRatio;
-	// const ratio = 1.0;
-	let app_params = {
-		// canvas: this.view,
-		width: this.width,  // NOTE: this is preferred over making own canvas!
-		height: this.height,
-		antialias: true, 
-		backgroundColor: 0xededed, 
-		resolution: this.pixel_ratio,  // NOTE: world coordinate calculations are affected by resolution!
-		// resolution: 1.0,
-		sharedTicker: true, // 
-		transparent: true,
-		autoResize: false, // might be needed for resolution 
-		// resizeTo: this.view,
-		forceCanvas: false, // NOTE: this can force CPU? 
-		autoStart: false, // <- note the animation updates won't be immediate! 
-		autoDensity: true,  // this acts as autoResize
-		failIfMajorPerformanceCaveat: true
-	}
-	await this.app.init(assign(app_params, options));
-	this.view = this.app.canvas
-	this.view.style.width = this.width
-	this.view.style.height = this.height
-	this.view.style.left = 0
-	this.view.style.top = 0
-	// this.view.width = this.width
-	// this.view.height = this.height
-	this.view.onwheel = function(event){ event.preventDefault(); };
-	this.view.onmousewheel = function(event){ event.preventDefault(); };
-}
-
-/**
- * Creates and configures a viewport for handling pan, zoom, and drag interactions
- * Uses pixi-viewport library for managing world-to-screen coordinate transformations
- * @async
- * @returns {Promise<Viewport>} The configured viewport instance
- */
-async _init_viewport(){
-	if (Object.hasOwn(this, "app")){
-		// const zoomScale = this.pixel_ratio * this.scale;
-		const zoomScale = this.scale;
-		this.vp = new Viewport({
-			screenWidth: this.width, 
-			screenHeight: this.height,
-			worldWidth: zoomScale * this.width, 
-			worldHeight: zoomScale * this.height,
-			events: this.app.renderer.events,  // this changed; app must be initialized
-			threshold: 10,  // number of pixels to move to trigger an input event 
-			// stopPropagation: true, 
-			// interaction: app.renderer.plugins.interaction
-		});
-		// this.vp = create_viewport(this.app, this.width, this.height, zoomScale * this.width, zoomScale * this.height);
-		const vp_params = {
-			clampZoom: { minWidth: this.width/zoomScale, maxWidth: this.width*zoomScale, minHeight: this.height/zoomScale, maxHeight: this.height*zoomScale }
+	async _init_application(options){
+		// this.view = document.createElement('canvas');
+		// this.view.width = this.width;
+		// this.view.height = this.height;
+		// this.view.style.width = this.width + 'px'
+		// this.view.style.height = this.height + 'px'
+		// set_dpi(this.view, 288);
+		// console.log(this.view.width);
+		this.app = new Application();
+		this.pixel_ratio = devicePixelRatio;
+		// const ratio = 1.0;
+		let app_params = {
+			// canvas: this.view,
+			width: this.width,  // NOTE: this is preferred over making own canvas!
+			height: this.height,
+			antialias: true, 
+			backgroundColor: 0xededed, 
+			resolution: this.pixel_ratio,  // NOTE: world coordinate calculations are affected by resolution!
+			// resolution: 1.0,
+			sharedTicker: true, // 
+			transparent: true,
+			autoResize: false, // might be needed for resolution 
+			// resizeTo: this.view,
+			forceCanvas: false, // NOTE: this can force CPU? 
+			autoStart: false, // <- note the animation updates won't be immediate! 
+			autoDensity: true,  // this acts as autoResize
+			failIfMajorPerformanceCaveat: true
 		}
-		// Clamp gets rid of panning !.clamp({ direction: 'all'})
-		this.vp
-			.drag({ wheel: false })
-			.pinch()
-			.wheel(1e-3)
-			.clamp({ direction: 'all'})
-			.clampZoom(vp_params.clampZoom)
-			.decelerate();
-		// this.vp.drag().wheel(1e-3).clamp({ direction: 'all'}).clampZoom(vp_params.clampZoom).decelerate();		
-		this.app.stage.addChild(this.vp)
-		return this.vp; 
+		await this.app.init(assign(app_params, options));
+		this.view = this.app.canvas
+		this.view.style.width = this.width
+		this.view.style.height = this.height
+		this.view.style.left = 0
+		this.view.style.top = 0
+		// this.view.width = this.width
+		// this.view.height = this.height
+		this.view.onwheel = function(event){ event.preventDefault(); };
+		this.view.onmousewheel = function(event){ event.preventDefault(); };
 	}
-}
-
-/**
- * Initializes the PixiJS ticker and D3 event dispatcher for animation and event handling
- * Registers the ticker with the application and viewport for synchronized updates
- */
-_init_ticker(){
-	const [ticker, dispatcher] = register_ticker(this.app, this.vp); // the (pixi) simulation tick
-	this.ticker = ticker 				 // pixi.js ticker
-	this.dispatcher = dispatcher // d3-dispatcher
-}
-
-/**
- * Initializes graphics objects for nodes and links, applying styling and establishing references
- * Scales node coordinates to fit viewport dimensions and resolves link source/target references
- * @param {Array<Object>} nodes - Array of node objects with id, x, y properties
- * @param {Array<Object>} links - Array of link objects with source, target references
- * @returns {Array<Array>} Tuple containing [nodes_gfx, links_gfx] graphics arrays
- */
-_init_graphics(nodes, links){
-	if (Object.hasOwn(this, "nodes") && Object.hasOwn(this, "links")){
-		// First: add (x,y) coordinates to nodes, if not given, and scale them by the width/height
-		scale_nodes(nodes, this.width, this.height)
-		// this.nodes_gfx = generate_node_graphics(nodes);
-		
-		// Merge new Graphics instances w/ node attributes, then 'build' by apply the styling
-		this.nodes_gfx = map(nodes, (node) => { return assign(new Graphics(), node); })
-		build_nodes(this.nodes_gfx, this.node_style)
-		
-		// Populate the links with node graphic references	(used to be resolve_links)
-		const id_map = fromPairs(this.nodes_gfx.map((node, i) => { return [node.id, i]; }));
-		links.forEach((link) => {
-			link.source = link.source instanceof Graphics ? link.source : this.nodes_gfx[id_map[link.source]];
-			link.target = link.target instanceof Graphics ? link.target : this.nodes_gfx[id_map[link.target]];
-		});
-		this.links_gfx = generate_links_graphic();
-		build_links(links, this.links_gfx, this.line_style);
-	}
-	return [this.nodes_gfx, this.links_gfx];
-}
-
-/**
- * Initializes a D3 force simulation with the node graphics as simulation subjects
- * Creates a stopped simulation with alpha set to 1.0 for manual control
- * @param {Object} sim_options - Configuration options for the force simulation
- */
-_init_force(sim_options){
-	if (!Object.hasOwn(this, "sim")){ 
-		console.log("Enabling force simulation");
-		this.sim = forceSimulation(this.nodes_gfx); 
-		this.sim.stop();
-		this.sim.alpha(1.0); // no restart needed
-	}
-
-	// Apply default forces if not given
-	// if (typeof sim_options == 'undefined'){ 
-	// 	console.log("Using default force settings");
-	// 	const c_x = (this.width * this.scale) / 2; 
-	// 	const c_y = (this.height * this.scale) / 2; 
-	// 	apply_sim(this.sim, default_sim_params)
-	// 	apply_force(this.sim, default_sim_params.force)
-	// 	this.sim.force('center').x(c_x).y(c_y);
-	// 	this.sim.force('spring').links(this.links);
-	// } else {
-	// 	console.log("Applying force settings: ", sim_options);
-	// 	apply_sim(this.sim, sim_options)
-	// 	apply_force(this.sim, sim_options.force)
-	// }
-	this.enable_force();
-}
-
-/**
- * Enables drag interaction for all node graphics in the visualization
- * Implements pointer-based dragging with viewport pause/resume and force simulation integration
- * @returns {boolean} True if drag was successfully enabled, false if nodes_gfx not available
- */
-enable_drag(){
-	if (!Object.hasOwn(this, "nodes_gfx")){ return false; }
-
-	// Make sure the viewport is interactive
-	this.vp.interactive = true; 
-	this.vp.visible = true; 
-	// this.vp.hitArea = this.vp.getBounds();
-	
-	// From: https://pixijs.com/8.x/examples/events/dragging
-	let dragTarget = null;
-	let viewport = this.vp; 
-	let dispatcher = this.dispatcher;
-	let sim = this.sim;
 
 	/**
-	 * Handles pointer move events during drag operations
-	 * @param {PointerEvent} event - The pointer move event
-	 * @param {Graphics} node - The node being dragged
-
+	 * Creates and configures a viewport for handling pan, zoom, and drag interactions
+	 * Uses pixi-viewport library for managing world-to-screen coordinate transformations
+	 * @async
+	 * @returns {Promise<Viewport>} The configured viewport instance
 	 */
-	function onDragMove(event, node){
-		// this == viewport
-		if (dragTarget) {
-			dragTarget.parent.toLocal(event.global, null, dragTarget.position);
-			dragTarget.fx = dragTarget.position.x
-			dragTarget.fy = dragTarget.position.y; 
-			// dispatcher.call("dragging.force")
+	async _init_viewport(){
+		if (Object.hasOwn(this, "app")){
+			// const zoomScale = this.pixel_ratio * this.scale;
+			const zoomScale = this.scale;
+			this.vp = new Viewport({
+				screenWidth: this.width, 
+				screenHeight: this.height,
+				worldWidth: zoomScale * this.width, 
+				worldHeight: zoomScale * this.height,
+				events: this.app.renderer.events,  // this changed; app must be initialized
+				threshold: 10,  // number of pixels to move to trigger an input event 
+				// stopPropagation: true, 
+				// interaction: app.renderer.plugins.interaction
+			});
+			// this.vp = create_viewport(this.app, this.width, this.height, zoomScale * this.width, zoomScale * this.height);
+			const vp_params = {
+				clampZoom: { minWidth: this.width/zoomScale, maxWidth: this.width*zoomScale, minHeight: this.height/zoomScale, maxHeight: this.height*zoomScale }
+			}
+			// Clamp gets rid of panning !.clamp({ direction: 'all'})
+			this.vp
+				.drag({ wheel: false })
+				.pinch()
+				.wheel(1e-3)
+				.clamp({ direction: 'all'})
+				.clampZoom(vp_params.clampZoom)
+				.decelerate();
+			// this.vp.drag().wheel(1e-3).clamp({ direction: 'all'}).clampZoom(vp_params.clampZoom).decelerate();		
+			this.app.stage.addChild(this.vp)
+			return this.vp; 
 		}
 	}
 
 	/**
-	 * Initiates drag operation for a node
-	 * @param {Graphics} node - The node to start dragging
-
+	 * Initializes the PixiJS ticker and D3 event dispatcher for animation and event handling
+	 * Registers the ticker with the application and viewport for synchronized updates
 	 */
-	function onDragStart(node){
-		viewport.plugins.get("drag").pause();
-		dragTarget = this;
-		viewport.on('pointermove', onDragMove);
-		
-		// Force-related 
-		dragTarget.fx = dragTarget.x; dragTarget.fy = dragTarget.y; 
-		sim?.alphaTarget(0.3)?.restart();
-		// dispatcher.call("start.force")
+	_init_ticker(){
+		const [ticker, dispatcher] = register_ticker(this.app, this.vp); // the (pixi) simulation tick
+		this.ticker = ticker 				 // pixi.js ticker
+		this.dispatcher = dispatcher // d3-dispatcher
 	}
 
 	/**
-	 * Ends drag operation and resumes viewport interaction
-
+	 * Initializes graphics objects for nodes and links, applying styling and establishing references
+	 * Scales node coordinates to fit viewport dimensions and resolves link source/target references
+	 * @param {Array<Object>} nodes - Array of node objects with id, x, y properties
+	 * @param {Array<Object>} links - Array of link objects with source, target references
+	 * @returns {Array<Array>} Tuple containing [nodes_gfx, links_gfx] graphics arrays
 	 */
-	function onDragEnd(){
-		if (dragTarget){
-			sim?.alphaTarget(0);
-			dragTarget.fx = null; dragTarget.fy = null; 
-
-			viewport.off('pointermove', onDragMove);
-			dragTarget = null;
-		}
-		// dispatcher.call("end.force")
-		viewport.plugins.get("drag").resume();
-	}
-
-	// Attach a pointerdown event to every node and pointer up to the viewport
-	this.vp.on('pointerup', onDragEnd);
-	this.vp.on('pointerupoutside', onDragEnd);
-	this.nodes_gfx.forEach((node) => {
-		// compose(pixi_drag(node))(drag_dispatcher(node));
-		node.interactive = true; 
-		node.on("pointerdown", onDragStart, node);
-	});
-	return true;
-}
-
-/**
- * Disables drag interaction for all node graphics
- * Sets interactive property to false for all nodes
- */
-disable_drag(){
-	console.log("disabling drag");
-	this.nodes_gfx.forEach((node) => {
-		node.interactive = false; 
-		// node.on("pointerdown", null);
-	});
-}
-
-/**
- * Enables force simulation by connecting the dispatcher tick event to simulation updates
- */
-enable_force(){
-	this.dispatcher.on("tick.force", () => {
-		this.sim.tick(); 
-	});
-	// Attach dispatchers for force events
-	// force_drag(this.sim)(this.dispatcher);
-}
-
-/**
- * Disables force simulation by removing the tick event handler
- */
-disable_force(){
-	this.dispatcher.on("tick.force", null);
-}
-
-/**
- * Centers the graph visualization by translating all nodes to the viewport center
- * Optionally fits the graph to the viewport bounds and updates force simulation center
- * @param {boolean} [fit=true] - Whether to fit the graph to viewport bounds
- * @param {number} [x] - Custom x-coordinate for center (defaults to viewport center)
- * @param {number} [y] - Custom y-coordinate for center (defaults to viewport center)
- */
-center_graph(fit = true, x = undefined, y = undefined){
-	const num_nodes = this.nodes_gfx.length;
-	const mean_x = sum(this.nodes_gfx.map((node) => { return node.x; })) / num_nodes;
-	const mean_y = sum(this.nodes_gfx.map((node) => { return node.y; })) / num_nodes;
-	console.log("Graph center: ", mean_x, mean_y);
-
-	this.sim?.stop();
-	const c_x = typeof x !== "undefined" ? x : (this.vp.worldWidth) / 2;
-	const c_y = typeof y !== "undefined" ? y : (this.vp.worldHeight) / 2;
-	for (let i = 0; i < this.nodes_gfx.length; i++) {
-		this.nodes_gfx[i].position.x -= mean_x;
-		this.nodes_gfx[i].position.y -= mean_y;
-		this.nodes_gfx[i].position.x += c_x;
-		this.nodes_gfx[i].position.y += c_y;
-	}
-	if (fit){
-		this.vp.fit(false, this.width, this.height);
-		// this.vp.moveCorner(this.width / this.scale, this.height / this.scale); // For w/e reason, moveCenter is bugged
-	}
-	this.vp.moveCenter(c_x, c_y);
-	this.sim?.force('center')?.x(c_x).y(c_y);
-	this.sim?.restart();
-	// this.app.renderer.render(this.app.stage);
-}
-
-/**
- * Adds a centering force to the simulation that pulls nodes toward a specified point
- * @param {string} [name="center"] - Name identifier for the force
- * @param {number} [x] - X-coordinate for center point (defaults to viewport center)
- * @param {number} [y] - Y-coordinate for center point (defaults to viewport center)
- */
-force_center(name = "center", x = undefined, y = undefined){
-	const xc = (x === undefined) ? this.width / 2 : x; 
-	const yc = (y === undefined) ? this.height / 2 : y; 
-	this.sim.force(name, forceCenter(xc, yc)); // register the link force
-}
-
-/**
- * Adds a spring force to the simulation that maintains desired distances between linked nodes
- * @param {string} [name="spring"] - Name identifier for the force
- * @param {number} [distance] - Desired distance between linked nodes
- * @param {number} [strength] - Strength of the spring force
- * @param {number} [iterations] - Number of iterations for force calculation
- */
-force_link(name = "spring", distance = undefined, strength = undefined, iterations = undefined){
-	let link_force = forceLink(this.links).id((d) => d.id);
-	link_force.distance(distance || 30);
-	if (strength !== undefined){
-		link_force.strength(strength)
-	}
-	link_force.iterations(iterations || 1);
-	this.sim.force(name, link_force); // register the link force
-}
-
-/**
- * Adds a many-body force to the simulation that simulates attractive or repulsive forces between all nodes
- * @param {string} [name="charge"] - Name identifier for the force
- * @param {number} [strength] - Strength of the force (negative for repulsion, positive for attraction)
- * @param {number} [theta] - Barnes-Hut approximation parameter for performance optimization
- * @param {number} [distanceMin] - Minimum distance for force calculation
- * @param {number} [distanceMax] - Maximum distance for force calculation
- */
-force_manybody(name = "charge", strength = undefined, theta = undefined, distanceMin = undefined, distanceMax = undefined){
-	let nbody_force = forceManyBody();
-	nbody_force.strength(strength || -30);
-	nbody_force.theta(theta || 0.90);
-	nbody_force.distanceMin(strength || 1.0);
-	nbody_force.distanceMax(strength || Infinity);
-	this.sim.force(name, nbody_force); // register the link force
-}
-
-/**
- * Applies force configuration parameters to the simulation
- * Parses force settings object and applies appropriate force types with their parameters
- * @param {Object} params - Force configuration object with force names as keys
- * @param {Object} params.forceName - Individual force configuration
- * @param {string} params.forceName.type - Type of force (e.g., "forceCenter", "forceManyBody")
- * @param {boolean} params.forceName.enabled - Whether the force is enabled
- * @param {number} params.forceName.x - X-coordinate for center forces
- * @param {number} params.forceName.y - Y-coordinate for center forces
- * @returns {boolean} False if simulation not available, simulation object otherwise
- */
-apply_force(params){
-	if (!Object.hasOwn(this, "sim")){ return false; }
-	console.log("force params", params)
-	forOwn(params, function(settings, force_name){
-		console.log("Applying force simulation parameters")
-		console.log(settings, force_name)
-		force_enabled = Object.hasOwn(settings, "enabled") || settings.enabled
-		if (!force_enabled){ return;}	
-		if (settings.type == "forceCenter"){
-			this.force_center(force_name, settings.x, settings.y);
-		} else if (settings.type == "forceManyBody"){
-			this.force_manybody(force_name, strength, theta, distanceMin, distanceMax);
-		}
-		
-			// settings.params
-			// // Sets up force with default setting
-			// this.sim.force(forcename, d3_force[settings.type]());
+	_init_graphics(nodes, links){
+		if (Object.hasOwn(this, "nodes") && Object.hasOwn(this, "links")){
+			// First: add (x,y) coordinates to nodes, if not given, and scale them by the width/height
+			scale_nodes(nodes, this.width, this.height)
+			// this.nodes_gfx = generate_node_graphics(nodes);
 			
-			// // Apply the given parameter settings
-			// forOwn(settings.params, function(param_value, param_name){
-			// 	console.log(forcename.toString() + ": " + param_name.toString() + " = " + param_value.toString())
-			// 	this.sim.force(forcename)[param_name](param_value);			
-			// })
-	})
-	return sim
-}
+			// Merge new Graphics instances w/ node attributes, then 'build' by apply the styling
+			this.nodes_gfx = map(nodes, (node) => { return assign(new Graphics(), node); })
+			build_nodes(this.nodes_gfx, this.node_style)
+			
+			// Populate the links with node graphic references	(used to be resolve_links)
+			const id_map = fromPairs(this.nodes_gfx.map((node, i) => { return [node.id, i]; }));
+			links.forEach((link) => {
+				link.source = link.source instanceof Graphics ? link.source : this.nodes_gfx[id_map[link.source]];
+				link.target = link.target instanceof Graphics ? link.target : this.nodes_gfx[id_map[link.target]];
+			});
+			this.links_gfx = generate_links_graphic();
+			build_links(links, this.links_gfx, this.line_style);
+		}
+		return [this.nodes_gfx, this.links_gfx];
+	}
 
-// // TODO: figure out how to do array 
-// node_radii(r){
-// 	const new_style = { ...NODE_STYLE, radius: r };
-// 	build_nodes(pp.nodes_gfx, new_style);
-// }
+	/**
+	 * Initializes a D3 force simulation with the node graphics as simulation subjects
+	 * Creates a stopped simulation with alpha set to 1.0 for manual control
+	 * @param {Object} sim_options - Configuration options for the force simulation
+	 */
+	_init_force(sim_options){
+		if (!Object.hasOwn(this, "sim")){ 
+			console.log("Enabling force simulation");
+			this.sim = forceSimulation(this.nodes_gfx); 
+			this.sim.stop();
+			this.sim.alpha(1.0); // no restart needed
+		}
 
+		// Apply default forces if not given
+		// if (typeof sim_options == 'undefined'){ 
+		// 	console.log("Using default force settings");
+		// 	const c_x = (this.width * this.scale) / 2; 
+		// 	const c_y = (this.height * this.scale) / 2; 
+		// 	apply_sim(this.sim, default_sim_params)
+		// 	apply_force(this.sim, default_sim_params.force)
+		// 	this.sim.force('center').x(c_x).y(c_y);
+		// 	this.sim.force('spring').links(this.links);
+		// } else {
+		// 	console.log("Applying force settings: ", sim_options);
+		// 	apply_sim(this.sim, sim_options)
+		// 	apply_force(this.sim, sim_options.force)
+		// }
+		this.enable_force();
+	}
+
+	/**
+	 * Enables drag interaction for all node graphics in the visualization
+	 * Implements pointer-based dragging with viewport pause/resume and force simulation integration
+	 * @returns {boolean} True if drag was successfully enabled, false if nodes_gfx not available
+	 */
+	enable_drag(){
+		if (!Object.hasOwn(this, "nodes_gfx")){ return false; }
+
+		// Make sure the viewport is interactive
+		this.vp.interactive = true; 
+		this.vp.visible = true; 
+		// this.vp.hitArea = this.vp.getBounds();
+		
+		// From: https://pixijs.com/8.x/examples/events/dragging
+		let dragTarget = null;
+		let viewport = this.vp; 
+		let dispatcher = this.dispatcher;
+		let sim = this.sim;
+
+		/**
+		 * Handles pointer move events during drag operations
+		 * @param {PointerEvent} event - The pointer move event
+		 * @param {Graphics} node - The node being dragged
+
+		*/
+		function onDragMove(event, node){
+			// this == viewport
+			if (dragTarget) {
+				dragTarget.parent.toLocal(event.global, null, dragTarget.position);
+				dragTarget.fx = dragTarget.position.x
+				dragTarget.fy = dragTarget.position.y; 
+				// dispatcher.call("dragging.force")
+			}
+		}
+
+		/**
+		 * Initiates drag operation for a node
+		 * @param {Graphics} node - The node to start dragging
+
+		*/
+		function onDragStart(node){
+			viewport.plugins.get("drag").pause();
+			dragTarget = this;
+			viewport.on('pointermove', onDragMove);
+			
+			// Force-related 
+			dragTarget.fx = dragTarget.x; dragTarget.fy = dragTarget.y; 
+			sim?.alphaTarget(0.3)?.restart();
+			// dispatcher.call("start.force")
+		}
+
+		/**
+		 * Ends drag operation and resumes viewport interaction
+
+		*/
+		function onDragEnd(){
+			if (dragTarget){
+				sim?.alphaTarget(0);
+				dragTarget.fx = null; dragTarget.fy = null; 
+
+				viewport.off('pointermove', onDragMove);
+				dragTarget = null;
+			}
+			// dispatcher.call("end.force")
+			viewport.plugins.get("drag").resume();
+		}
+
+		// Attach a pointerdown event to every node and pointer up to the viewport
+		this.vp.on('pointerup', onDragEnd);
+		this.vp.on('pointerupoutside', onDragEnd);
+		this.nodes_gfx.forEach((node) => {
+			// compose(pixi_drag(node))(drag_dispatcher(node));
+			node.interactive = true; 
+			node.on("pointerdown", onDragStart, node);
+		});
+		return true;
+	}
+
+	/**
+	 * Disables drag interaction for all node graphics
+	 * Sets interactive property to false for all nodes
+	 */
+	disable_drag(){
+		console.log("disabling drag");
+		this.nodes_gfx.forEach((node) => {
+			node.interactive = false; 
+			// node.on("pointerdown", null);
+		});
+	}
+
+	/**
+	 * Enables force simulation by connecting the dispatcher tick event to simulation updates
+	 */
+	enable_force(){
+		this.dispatcher.on("tick.force", () => {
+			this.sim.tick(); 
+		});
+		// Attach dispatchers for force events
+		// force_drag(this.sim)(this.dispatcher);
+	}
+
+	/**
+	 * Disables force simulation by removing the tick event handler
+	 */
+	disable_force(){
+		this.dispatcher.on("tick.force", null);
+	}
+
+	/**
+	 * Centers the graph visualization by translating all nodes to the viewport center
+	 * Optionally fits the graph to the viewport bounds and updates force simulation center
+	 * @param {boolean} [fit=true] - Whether to fit the graph to viewport bounds
+	 * @param {number} [x] - Custom x-coordinate for center (defaults to viewport center)
+	 * @param {number} [y] - Custom y-coordinate for center (defaults to viewport center)
+	 */
+	center_graph(fit = true, x = undefined, y = undefined){
+		const num_nodes = this.nodes_gfx.length;
+		const mean_x = sum(this.nodes_gfx.map((node) => { return node.x; })) / num_nodes;
+		const mean_y = sum(this.nodes_gfx.map((node) => { return node.y; })) / num_nodes;
+		console.log("Graph center: ", mean_x, mean_y);
+
+		this.sim?.stop();
+		const c_x = typeof x !== "undefined" ? x : (this.vp.worldWidth) / 2;
+		const c_y = typeof y !== "undefined" ? y : (this.vp.worldHeight) / 2;
+		for (let i = 0; i < this.nodes_gfx.length; i++) {
+			this.nodes_gfx[i].position.x -= mean_x;
+			this.nodes_gfx[i].position.y -= mean_y;
+			this.nodes_gfx[i].position.x += c_x;
+			this.nodes_gfx[i].position.y += c_y;
+		}
+		if (fit){
+			this.vp.fit(false, this.width, this.height);
+			// this.vp.moveCorner(this.width / this.scale, this.height / this.scale); // For w/e reason, moveCenter is bugged
+		}
+		this.vp.moveCenter(c_x, c_y);
+		this.sim?.force('center')?.x(c_x).y(c_y);
+		this.sim?.restart();
+		// this.app.renderer.render(this.app.stage);
+	}
+
+	/**
+	 * Adds a centering force to the simulation that pulls nodes toward a specified point
+	 * @param {string} [name="center"] - Name identifier for the force
+	 * @param {number} [x] - X-coordinate for center point (defaults to viewport center)
+	 * @param {number} [y] - Y-coordinate for center point (defaults to viewport center)
+	 */
+	force_center(name = "center", x = undefined, y = undefined){
+		console.log("making center force", this)
+		const xc = (x === undefined) ? this.width / 2 : x; 
+		const yc = (y === undefined) ? this.height / 2 : y; 
+		this.sim.force(name, forceCenter(xc, yc)); // register the link force
+	}
+
+	/**
+	 * Adds a spring force to the simulation that maintains desired distances between linked nodes
+	 * @param {string} [name="spring"] - Name of the link force.
+	 * @param {number} [distance] - Desired distance between linked nodes.
+	 * @param {number} [strength] - Strength of the link force.
+	 * @param {number} [iterations] - Number of iterations for the link force calculation.
+	 */
+	force_link(name = "spring", distance = undefined, strength = undefined, iterations = undefined){
+		let link_force = forceLink(this.links).id((d) => d.id);
+		link_force.distance(distance || 30);
+		link_force.strength(strength || ((link) => { 1 / Math.min(count(link.source), count(link.target)) }));
+		if (strength !== undefined){
+			link_force.strength(strength)
+		}
+		link_force.iterations(iterations || 1);
+		this.sim.force(name, link_force); // register the link force
+	}
+
+	/**
+	 * Adds a many-body force to the simulation that simulates attractive or repulsive forces between all nodes
+	 * @param {string} [name="charge"] - Name identifier for the force
+	 * @param {number} [strength] - Strength of the force (negative for repulsion, positive for attraction)
+	 * @param {number} [theta] - Barnes-Hut approximation parameter for performance optimization
+	 * @param {number} [distanceMin] - Minimum distance for force calculation
+	 * @param {number} [distanceMax] - Maximum distance for force calculation
+	 */
+	force_manybody(name = "charge", strength = undefined, theta = undefined, distanceMin = undefined, distanceMax = undefined){
+		let nbody_force = forceManyBody();
+		nbody_force.strength(strength || -30);
+		nbody_force.theta(theta || 0.90);
+		nbody_force.distanceMin(strength || 1.0);
+		nbody_force.distanceMax(strength || Infinity);
+		this.sim.force(name, nbody_force); // register the link force
+	}
+
+	/**
+	 * Applies force configuration parameters to the simulation
+	 * Parses force settings object and applies appropriate force types with their parameters
+	 * @param {Object} params - Force configuration object with force names as keys
+	 * @param {Object} params.forceName - Individual force configuration
+	 * @param {string} params.forceName.type - Type of force (e.g., "forceCenter", "forceManyBody")
+	 * @param {boolean} params.forceName.enabled - Whether the force is enabled
+	 * @param {number} params.forceName.x - X-coordinate for center forces
+	 * @param {number} params.forceName.y - Y-coordinate for center forces
+	 * @returns {boolean} False if simulation not available, simulation object otherwise
+	 */
+	apply_force(params){
+		if (!Object.hasOwn(this, "sim")){ return false; }
+		console.log("force params", params)
+		forOwn(params, (settings, force_name) => {
+			console.log("Applying force simulation parameters", this)
+			console.log("Force settings", settings, force_name)
+			// const force_enabled = Object.hasOwn(settings, "enabled") || settings.enabled
+			// if (!force_enabled){ return;}	
+			if (settings.type == "forceCenter"){
+				this.force_center(force_name, settings.x, settings.y);
+			} else if (settings.type == "forceManyBody"){
+				const { strength, theta, distanceMin, distanceMax } = settings;
+				this.force_manybody(force_name, strength, theta, distanceMin, distanceMax);
+			} else if (settings.type == "forceLink"){
+				const { distance, strength, iterations } = settings;
+				this.force_link(force_name, distance, strength, iterations);
+			} else if (settings.type == "forceCollide"){
+				const { radius, strength, iterations } = settings;
+				this.force_collide(force_name, radius, strength, iterations);
+			} else if (settings.type == "forceRadial"){
+
+			} else if (settings.type == "forceX"){
+
+			} else if (settings.type == "forceX"){
+
+			} else {
+				console.log("Unknown force settings: ", settings);
+			}
+			
+				// settings.params
+				// // Sets up force with default setting
+				// this.sim.force(forcename, d3_force[settings.type]());
+				
+				// // Apply the given parameter settings
+				// forOwn(settings.params, function(param_value, param_name){
+				// 	console.log(forcename.toString() + ": " + param_name.toString() + " = " + param_value.toString())
+				// 	this.sim.force(forcename)[param_name](param_value);			
+				// })
+		})
+		return sim;
+	}
 }
 
 // Export statements for utility functions and classes

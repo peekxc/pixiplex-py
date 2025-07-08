@@ -70,7 +70,7 @@ async function render({ model, el }) {
 		console.log("Forces callback called!");
 		const forces = model.get("forces");
 		console.log("Model forces: ", forces);
-		pp.apply_force(pp.sim, forces);
+		pp.apply_force(forces);
 	});
 
 	model.on("msg:custom", (msg) => {

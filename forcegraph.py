@@ -13,6 +13,7 @@ p
 # %%
 p.node_color = ["0xff0000"] * len(node_ids)
 p
+p.node_color
 
 # %%
 from bokeh.plotting import figure, show

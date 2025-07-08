@@ -97,7 +97,7 @@ class ForceConfig:
 	def __init__(self) -> None:
 		self.forces: dict[str, Any] = {}
 
-	def center(self, name: str = "center", **kwargs) -> "ForceConfig":
+	def center(self, name: str = "center", x: float = 0.0, y: float = 0.0, strength: float = 1.0) -> "ForceConfig":
 		"""Add center force.
 
 		Parameters:
@@ -106,7 +106,8 @@ class ForceConfig:
 			y: y-position of the centering force.
 			strength: relative strength of the centering force.
 		"""
-		self.forces[name] = {"type": "forceCenter", "enabled": True, "params": asdict(ForceCenter(**kwargs))}
+		fc = ForceCenter(x, y, strength)
+		self.forces[name] = {"type": "forceCenter", "enabled": True, "params": asdict(fc)}
 		return self
 
 	def collide(self, name: str = "collide", **kwargs) -> "ForceConfig":
@@ -216,6 +217,17 @@ class Pixinet(anywidget.AnyWidget):
 	def y(self):
 		self.send({"type": "msg:sync_node_coordinates"})
 		return self._y
+
+	def embed_html(self, path: pathlib.Path):
+		import ipywidgets.embed
+
+		ipywidgets.embed.embed_minimal_html(str(path.resolve()), views=[self], drop_defaults=False)
+
+	def embed_state(self, path: pathlib.Path = None):
+		from ipywidgets.embed import embed_data
+		import json
+
+		return embed_data(self)
 
 	# def restart():
 	# # @x.setter

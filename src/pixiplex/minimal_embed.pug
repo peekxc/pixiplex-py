@@ -1,0 +1,30 @@
+doctype html
+head
+	meta(charset='utf-8')
+	title d3 webGL force graph with PIXI.js
+	meta(name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no")
+	meta(name='description' content='')
+	meta(name='theme-color' content='#000000')
+body
+	div(
+		id="pixiplex_container" style="position: relative; overflow: hidden; overflow-y: hidden; padding: 0; margin: 5px; border: 1px solid black; "
+	)
+	script(type="module").
+		import * as pn from "./pixinet.js"
+		
+		// Constants	
+		const WORLD_WIDTH = 1000;
+		const WORLD_HEIGHT = 1000;
+		console.log("Pixel ratio: " + devicePixelRatio)
+
+		// Load the data
+		const graph = await pn.json("data/les_miserables.json");
+
+		// Construct the pixiplex instance 
+		window.pp = new pn.Pixiplex(graph.nodes, graph.links, 1200, 800, 2.0);
+		const pp = window.pp;
+		await pp.init();
+		
+		// Setup bordered container to house the canvas for debugging
+		let pn_cont = document.getElementById("pixiplex_container")
+		pn_cont.appendChild(pp.view);

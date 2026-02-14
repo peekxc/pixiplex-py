@@ -36,17 +36,18 @@ async function render({ model, el }) {
 
 	// Build the graph from the model
 	window.model = model;
-	console.log(model);
+	console.log("model: ", model);
 	const nodes = model.get('node_ids').map((node_id) => { return {'id' : node_id} });
 	const src_ids = model.get('src_ids');
 	const tgt_ids = model.get('tgt_ids');
 	const links = src_ids.map((s, i) => { return { 'source': s, 'target': tgt_ids[i] }; });
 
 	// Initialize the base instance
-	let pp = new pn.Pixiplex(nodes, links, model.get("width"), model.get("height"), model.get("scale"));
+	let pp = new pn.Pixiplex(nodes, links, model.get("width"), model.get("height"), model.get("scale"), model.get("forces"));
 	await pp.init();	
 	window.pp = pp;
 	el.appendChild(pp.view);
+
 
 	// Add callback to always synchronize coordinates to Python side when the simulation ends
 	pp.sim?.on("end", () => sync_coordinates(model, pp));

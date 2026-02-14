@@ -58,3 +58,9 @@ markdown_extensions:
 extra_css:
   - css/sig-docs.css
   - css/mkapi.css
+
+extra_javascript:
+  - path: js/pixinet.mjs
+    type: module
+  - path: js/extra.js 
+    type: module

@@ -1,4 +1,4 @@
-"""pixiplex/pixninet.py"""
+"""pixiplex/pixinet.py"""
 
 from os import sync
 import pathlib
@@ -86,6 +86,18 @@ class NodeStyle:
 
 	@staticmethod
 	def as_dict(config: "NodeStyle", widget: anywidget.AnyWidget) -> dict[str, Any]:
+		"""Dictionary serialization method necessary for widget synchronization."""
+		return asdict(config)
+
+
+@dataclass
+class EdgeStyle:
+	line_width: float = 1.0
+	color: str = "0x000000"
+	alpha: float = 1.0
+
+	@staticmethod
+	def as_dict(config: "EdgeStyle", widget: anywidget.AnyWidget) -> dict[str, Any]:
 		"""Dictionary serialization method necessary for widget synchronization."""
 		return asdict(config)
 
@@ -180,6 +192,7 @@ class Pixinet(anywidget.AnyWidget):
 	node_value = traitlets.Int(0).tag(sync=True)
 
 	node_style = traitlets.Instance(NodeStyle).tag(sync=True, to_json=NodeStyle.as_dict)
+	# edge_style = traitlets.Instance(NodeStyle).tag(sync=True, to_json=NodeStyle.as_dict)
 
 	## All the force parameters are collected in a dict / config class
 	forces = traitlets.Instance(ForceConfig).tag(sync=True, to_json=ForceConfig.as_dict)
@@ -229,9 +242,27 @@ class Pixinet(anywidget.AnyWidget):
 
 		return embed_data(self)
 
-	# def restart():
-	# # @x.setter
-	# # def x(self, value: ArrayLike):
-	# # 	value = np.atleast_1d(value).astype(np.float32).ravel()
-	# # 	assert len(value) == len(self.node_ids)
-	# # 	self._x = value
+	def embed_raw(self, path: pathlib.Path | str):
+		import json
+
+		path = pathlib.Path(path)
+		graph = {}
+		graph["nodes"] = [{"id": i} for i in self.node_ids]
+		graph["links"] = [{"source": i, "target": j} for i, j in zip(self.src_ids, self.tgt_ids)]
+		html_template = f"""
+		<div id="pixiplex_container" style="position: relative; overflow: hidden; overflow-y: hidden; padding: 0; margin: 5px; border: 1px solid black; "></div>
+		<script type="module">
+		import * as pn from "./pixinet.js"
+		const WORLD_WIDTH = 1000;
+		const WORLD_HEIGHT = 1000;
+		console.log("Pixel ratio: " + devicePixelRatio);
+		const graph = {json.dumps(graph)};
+		const pp = new pn.Pixiplex(graph.nodes, graph.links, 400, 400, 2.0);
+		window.pp = pp; 
+		await pp.init();
+		document.getElementById("pixiplex_container").appendChild(pp.view);
+		</script>
+		"""
+
+		# json.dumps(graph)
+		path.write_text(html_template)

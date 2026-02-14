@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "http://yourdomain.com/schemas/myschema.json",
+  "name": "pixiplex Graph JSON schema",
+  "description": "",
+  "type": "object",
+  "properties": {
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 0,
+        "uniqueItems": true,
+        "maxContains": 4294967295
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "array"
+      }
+    }
+  },
+  "required": [
+    "nodes",
+    "edges"
+  ]
+}

@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "http://yourdomain.com/schemas/myschema.json",
+  "name": "pixiplex Graph JSON schema",
+  "description": "",
+  "type": "object",
+  "required": [
+    "nodes",
+    "edges"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "nodes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/node",
+        "uniqueItems": true
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/edge",
+        "uniqueItems": true
+      }
+    }, 
+		"forces": {
+			"type": "object",
+			"items": {
+				"x": { "type": "number" }
+			}
+		}
+  },
+  "$defs": {
+    "node": {
+      "properties": {
+        "id": {
+          "type": "integer", 
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "radius": {
+          "type": "number"
+        },
+        "color": {
+          "$ref": "#/$defs/hex"
+        },
+        "alpha": {
+          "type": "number",
+          "minimum": 0, 
+          "maximum": 1
+        },
+        "border_width": {
+          "type": "number"
+        },
+        "border_color": {
+          "$ref": "#/$defs/hex"
+        }
+      },
+      "required": [
+        "id"
+      ], 
+      "additionalProperties": true
+    },
+    "edge": {
+      "type": "object",
+      "properties": {
+        "source": {"type": "integer"},
+        "target": {"type": "integer"},
+        "line_width": {"type": "number", "minimum": 0},
+        "color": {"$ref" : "#/$defs/hex"},
+        "alpha": {
+          "type": "number", 
+          "minimum": 0, 
+          "maximum": 1
+        }
+      }, 
+      "required": ["source", "target"], 
+      "additionalProperties": true
+    },
+    "hex": {
+      "type": "string",
+      "pattern": "0[xX][0-9a-fA-F]+"
+    }
+  }
+}

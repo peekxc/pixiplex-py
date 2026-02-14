@@ -83,10 +83,10 @@ export const make_scale = (w, h) => {
 
 /** Default styling configuration for network nodes */
 export const NODE_STYLE = { 
-	lineStyle: { size: 1.5, color: 0xFFFFFF },
-	color: 0x650A5A,
 	radius: 6,
-	alpha: 1
+	color: 0x650A5A,
+	alpha: 1,
+	lineStyle: { size: 1.5, color: 0xFFFFFF }
 }
 
 /** Default styling configuration for network links/edges */
@@ -698,7 +698,12 @@ class Pixiplex {
 		this.nodes_gfx = null
 		this.links_gfx = null
 		this.polygons_gfx = null;
-
+		this.degree = Array(nodes.length).fill(0);
+		// this.degree = {}
+		this.links.forEach(link => {
+				this.degree[link.source.id] = this.degree[link.source.id] + 1;
+				this.degree[link.target.id] = this.degree[link.target.id] + 1;
+		});
 		this.node_style = NODE_STYLE; // optional; nodes with track their styles internally
 		this.line_style = LINE_STYLE;	// mandatory, lines are redrawn using this 
 		this.polygon_style = POLYGON_STYLE;
@@ -886,6 +891,13 @@ class Pixiplex {
 			this.sim.alpha(1.0); // no restart needed
 		}
 
+		// Apply forces if they exist 
+		console.log("applying forces", this.forces);
+		if (!isEmpty(this.forces)){
+			console.log(this.sim)
+			this.apply_force(this.forces)
+		} 
+
 		// Apply default forces if not given
 		// if (typeof sim_options == 'undefined'){ 
 		// 	console.log("Using default force settings");
@@ -1022,11 +1034,12 @@ class Pixiplex {
 		const num_nodes = this.nodes_gfx.length;
 		const mean_x = sum(this.nodes_gfx.map((node) => { return node.x; })) / num_nodes;
 		const mean_y = sum(this.nodes_gfx.map((node) => { return node.y; })) / num_nodes;
-		console.log("Graph center: ", mean_x, mean_y);
-
+		
 		this.sim?.stop();
-		const c_x = typeof x !== "undefined" ? x : (this.vp.worldWidth) / 2;
-		const c_y = typeof y !== "undefined" ? y : (this.vp.worldHeight) / 2;
+		// (x,y) as given should be scaled such that the user-viewed coordinates translate to world coordinates
+		const c_x = typeof x !== "undefined" ? x * this.scale : (this.vp.worldWidth) / 2;
+		const c_y = typeof y !== "undefined" ? y * this.scale : (this.vp.worldHeight) / 2;
+		console.log("Centering graph center ", mean_x, mean_y, " to ", c_x, c_y);
 		for (let i = 0; i < this.nodes_gfx.length; i++) {
 			this.nodes_gfx[i].position.x -= mean_x;
 			this.nodes_gfx[i].position.y -= mean_y;
@@ -1034,11 +1047,12 @@ class Pixiplex {
 			this.nodes_gfx[i].position.y += c_y;
 		}
 		if (fit){
-			this.vp.fit(false, this.width, this.height);
+			this.vp.fit();
+			// this.vp.fit(false, this.width, this.height);
 			// this.vp.moveCorner(this.width / this.scale, this.height / this.scale); // For w/e reason, moveCenter is bugged
 		}
-		this.vp.moveCenter(c_x, c_y);
-		this.sim?.force('center')?.x(c_x).y(c_y);
+		// this.vp.moveCenter(c_x, c_y);
+		// this.sim?.force('center')?.x(c_x).y(c_y);
 		this.sim?.restart();
 		// this.app.renderer.render(this.app.stage);
 	}
@@ -1050,9 +1064,10 @@ class Pixiplex {
 	 * @param {number} [y] - Y-coordinate for center point (defaults to viewport center)
 	 */
 	force_center(name = "center", x = undefined, y = undefined){
-		console.log("making center force", this)
-		const xc = (x === undefined) ? this.width / 2 : x; 
-		const yc = (y === undefined) ? this.height / 2 : y; 
+		console.log("making center force", this, x, y);
+		const xc = (x === undefined) ? this.width * this.scale / 2 : x; 
+		const yc = (y === undefined) ? this.height * this.scale / 2 : y; 
+		console.log("centering at: ", xc, yc);
 		this.sim.force(name, forceCenter(xc, yc)); // register the link force
 	}
 
@@ -1066,7 +1081,7 @@ class Pixiplex {
 	force_link(name = "spring", distance = undefined, strength = undefined, iterations = undefined){
 		let link_force = forceLink(this.links).id((d) => d.id);
 		link_force.distance(distance || 30);
-		link_force.strength(strength || ((link) => { 1 / Math.min(count(link.source), count(link.target)) }));
+		// link_force.strength(strength || ((link) => { 1 / Math.min(this.degree[link.source.id], this.degree[link.target.id]) }));
 		if (strength !== undefined){
 			link_force.strength(strength)
 		}
@@ -1091,6 +1106,29 @@ class Pixiplex {
 		this.sim.force(name, nbody_force); // register the link force
 	}
 
+	force_x(name = "x", x = undefined, strength = undefined){
+		let x_force = forceX();
+		x_force.x(x || this.width / 2);
+		x_force.strength(strength || 0.1);
+		this.sim.force(name, x_force);
+	}
+
+	force_y(name = "y", y = undefined, strength = undefined){
+		let y_force = forceY();
+		y_force.y(y || this.height / 2);
+		y_force.strength(strength || 0.1);
+		this.sim.force(name, y_force);
+	}
+
+	force_radial(name = "ra", radius = undefined, x = undefined, y = undefined, strength = undefined){
+		let radial_force = forceRadial();
+		radial_force.radius(radius || 1.0);
+		radial_force.x(x || this.width / 2);
+		radial_force.y(y || this.height / 2);
+		radial_force.strength(strength || 0.1)
+		this.sim.force(name, radial_force);
+	}
+
 	/**
 	 * Applies force configuration parameters to the simulation
 	 * Parses force settings object and applies appropriate force types with their parameters
@@ -1098,8 +1136,6 @@ class Pixiplex {
 	 * @param {Object} params.forceName - Individual force configuration
 	 * @param {string} params.forceName.type - Type of force (e.g., "forceCenter", "forceManyBody")
 	 * @param {boolean} params.forceName.enabled - Whether the force is enabled
-	 * @param {number} params.forceName.x - X-coordinate for center forces
-	 * @param {number} params.forceName.y - Y-coordinate for center forces
 	 * @returns {boolean} False if simulation not available, simulation object otherwise
 	 */
 	apply_force(params){
@@ -1122,13 +1158,17 @@ class Pixiplex {
 				const { radius, strength, iterations } = settings;
 				this.force_collide(force_name, radius, strength, iterations);
 			} else if (settings.type == "forceRadial"){
-
+				const { radius, x, y, strength } = settings;
+				this.force_radial(force_name, radius, x, y, strength);
 			} else if (settings.type == "forceX"){
-
-			} else if (settings.type == "forceX"){
-
+				const { x, strength } = settings;
+				this.force_x(force_name, x, strength);
+			} else if (settings.type == "forceY"){
+				const { y, strength } = settings;
+				this.force_y(force_name, y, strength);
 			} else {
 				console.log("Unknown force settings: ", settings);
+				return false; 
 			}
 			
 				// settings.params
@@ -1141,7 +1181,7 @@ class Pixiplex {
 				// 	this.sim.force(forcename)[param_name](param_value);			
 				// })
 		})
-		return sim;
+		return this.sim;
 	}
 }
 

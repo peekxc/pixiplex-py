@@ -7,19 +7,6 @@ window.pn = pn;
 const pnCont = document.getElementById("pixiplex_container");
 const pp = new pn.Pixiplex(graph.nodes, graph.links, 1200, 800, 2.0);
 window.pp = pp;
-
-try {
-  await Promise.race([
-    pp.init(),
-    new Promise((_, reject) => {
-      setTimeout(() => reject(new Error("Pixiplex init timed out after 7s")), 7000);
-    }),
-  ]);
-  pnCont.appendChild(pp.view);
-} catch (error) {
-  pnCont.innerHTML = `<div class="m-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">Failed to initialize Pixiplex renderer. Check browser console for details.<br/>${error?.message ?? error}</div>`;
-  throw error;
-}
 const perfHud = document.getElementById("perf_hud");
 
 const BASE_NODE_STYLE = pn.default_node_styles(pp.nodes, pn.NODE_STYLE);
@@ -149,7 +136,7 @@ const updateInteractionUI = () => {
 };
 
 const detectRendererLabel = () => {
-  const name = pp.app?.renderer?.constructor?.name ?? "Unknown";
+  const name = pp.app?.renderer?.config?.name ?? "Unknown";
   const low = name.toLowerCase();
   if (low.includes("webgpu")) {
     return "WebGPU";
@@ -506,8 +493,19 @@ document.getElementById("charge_strength_slider").addEventListener("input", (eve
   updateForceUI();
 });
 
-resetDefaultForces();
-updateInteractionUI();
-updateForceUI();
-updateRendererUI();
-requestAnimationFrame(updatePerfHud);
+const startApp = async () => {
+  try {
+    await pp.init();
+    pnCont.appendChild(pp.view);
+    resetDefaultForces();
+    updateInteractionUI();
+    updateForceUI();
+    updateRendererUI();
+    requestAnimationFrame(updatePerfHud);
+  } catch (error) {
+    pnCont.innerHTML = `<div class="m-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">Failed to initialize Pixiplex renderer. Check browser console for details.<br/>${error?.message ?? error}</div>`;
+    throw error;
+  }
+};
+
+startApp();

@@ -5,7 +5,7 @@ export default defineConfig({
   build: {
     outDir: resolve(__dirname, "src/pixiplex/static"),
     emptyOutDir: false,
-    sourcemap: true,
+    sourcemap: false,
     lib: {
       entry: resolve(__dirname, "src/pixiplex/widget.js"),
       formats: ["es"],

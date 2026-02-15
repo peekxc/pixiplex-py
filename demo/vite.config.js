@@ -3,12 +3,18 @@ import UnoCSS from "@unocss/vite";
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  root: resolve(__dirname, "demo"),
   plugins: [UnoCSS()],
   build: {
-    outDir: resolve(__dirname, "demo/dist"),
+    outDir: resolve(__dirname, "dist"),
     emptyOutDir: true,
-    sourcemap: true,
+    sourcemap: false,
+    // cssCodeSplit: false,
+    // rollupOptions: {
+    //   output: {
+    //     inlineDynamicImports: true,
+    //     manualChunks: undefined,
+    //   },
+    // },
   },
   server: {
     host: "127.0.0.1",

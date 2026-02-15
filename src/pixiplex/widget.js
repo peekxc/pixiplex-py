@@ -44,7 +44,7 @@ async function render({ model, el }) {
 
 	// Initialize the base instance
 	let pp = new pn.Pixiplex(nodes, links, model.get("width"), model.get("height"), model.get("scale"), model.get("forces"));
-	await pp.init();	
+	await pp.init_all();	
 	window.pp = pp;
 	el.appendChild(pp.view);
 

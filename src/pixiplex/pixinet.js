@@ -7,7 +7,7 @@ import { Viewport } from 'pixi-viewport';
 import { selection, select } from 'd3-selection';
 import { scaleLinear } from 'd3-scale';
 import { polygonContains } from 'd3-polygon';
-import lasso from './lasso.js';
+// import lasso from './lasso.js';
 import { dispatch } from 'd3-dispatch';
 import { assign, forOwn, map, remove, concat, filter, unionBy, pullAllBy, pullAllWith, intersectionWith, unionWith, differenceBy, differenceWith, transform, includes, isFunction, isEmpty, merge, flatMap, sum, fromPairs, reduce, sortedIndexBy } from 'lodash-es';
 import { forceCenter, forceCollide, forceLink, forceManyBody, forceRadial, forceSimulation, forceX, forceY } from 'd3-force';
@@ -798,15 +798,6 @@ class Pixiplex {
 		this._init_error = null;
 	}
 
-	_with_timeout(promise, timeout_ms = 5000, label = "operation"){
-		return Promise.race([
-			promise,
-			new Promise((_, reject) => {
-				setTimeout(() => reject(new Error(`Pixiplex ${label} timed out after ${timeout_ms}ms`)), timeout_ms);
-			}),
-		]);
-	}
-
 	_register_force(name, type){
 		this.force_registry[name] = type;
 	}
@@ -841,6 +832,18 @@ class Pixiplex {
 	 * @param {boolean} center - Whether to center the graph initially
 	 */
 	async init(drag = true, center = true){
+		return this.init_all(drag, center);
+	}
+
+	/**
+	 * Initializes the visualization with PIXI application, viewport, and force simulation
+	 * @async
+	 * @method init_all
+	 * @memberof Pixiplex
+	 * @param {boolean} drag - Whether to enable node dragging
+	 * @param {boolean} center - Whether to center the graph initially
+	 */
+	async init_all(drag = true, center = true){
 			if (this._init_state === "ready"){ return this; }
 			if (this._init_state === "initializing" && this._init_promise){ return this._init_promise; }
 
@@ -903,7 +906,7 @@ class Pixiplex {
 		// this.view.style.height = this.height + 'px'
 		// set_dpi(this.view, 288);
 		// console.log(this.view.width);
-		this.pixel_ratio = devicePixelRatio;
+		this.pixel_ratio = Math.min(devicePixelRatio || 1, 1.5);
 		let app_params = {
 			// canvas: this.view,
 			width: this.width,  // NOTE: this is preferred over making own canvas!
@@ -924,7 +927,6 @@ class Pixiplex {
 		}
 
 		let resolved_app = null;
-		let last_error = null;
 		const attempt_configs = [
 			assign({}, app_params, options),
 			assign({}, app_params, options, { antialias: false, resolution: 1, powerPreference: "low-power" }),
@@ -933,26 +935,26 @@ class Pixiplex {
 		for (let i = 0; i < attempt_configs.length; i++){
 			const app = new Application();
 			try {
-				await this._with_timeout(app.init(attempt_configs[i]), 5000, `renderer init attempt ${i + 1}`);
+				await app.init(attempt_configs[i]);
 				resolved_app = app;
 				break;
 			} catch (err){
-				last_error = err;
 				console.warn(`Pixiplex: renderer init attempt ${i + 1} failed`, err);
 				try { app.destroy(); } catch (_) {}
 			}
 		}
 
 		if (!resolved_app){
-			throw last_error || new Error("Pixiplex failed to initialize renderer");
+			throw new Error("Pixiplex failed to initialize renderer");
 		}
 
 		this.app = resolved_app;
 		this.view = this.app.canvas
-		this.view.style.width = this.width
-		this.view.style.height = this.height
-		this.view.style.left = 0
-		this.view.style.top = 0
+		this.view.style.width = `${this.width}px`;
+		this.view.style.height = `${this.height}px`;
+		this.view.style.left = "0px";
+		this.view.style.top = "0px";
+		this.view.style.display = "block";
 		// this.view.width = this.width
 		// this.view.height = this.height
 		this.view.onwheel = function(event){ event.preventDefault(); };
@@ -1193,7 +1195,7 @@ class Pixiplex {
 	set_performance_mode(enabled = true){
 		this.performance_mode = enabled;
 		if (this.ticker){
-			this.ticker.maxFPS = enabled ? 45 : 60;
+			this.ticker.maxFPS = enabled ? 30 : 60;
 		}
 		if (this.app?.renderer){
 			const target_resolution = enabled ? 1 : this.pixel_ratio;

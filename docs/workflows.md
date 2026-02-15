@@ -38,7 +38,12 @@ Because `pixiplex` is a library that spans both Python and JavaScript, it requir
 	bun run dev
 	```
 
-	This provides full HMR for JavaScript and styles; tweak `demo/main.js` or `demo/index.html` incrementally until desired functionality is verified.
+	This uses the dedicated demo config at `demo/vite.config.js` and provides full HMR for JavaScript and styles; tweak `demo/main.js` or `demo/index.html` incrementally until desired functionality is verified.
+
+	!!! warning
+		For the PixiJS demo bootstrap, avoid top-level `await` in `demo/main.js`.
+		Use an explicit async startup function (e.g. `const startApp = async () => { ... }; startApp();`).
+		This avoids a production-only initialization issue seen with Vite builds where the UI loads but the Pixi canvas never mounts.
 
 === "Testing dashboard"
 	An interactive dashboard showcasing the functionality of the package can be run via the Panel command:
@@ -91,3 +96,18 @@ Because `pixiplex` is a library that spans both Python and JavaScript, it requir
 	jsdoc2md --template templates/sig-style.hbs --files src/pixiplex/pixinet.js > docs/api/pixinet.md \n
 	mkdocs build --clean
 	```
+
+
+=== "Bundle Analyzer"
+
+	To see a breakdown of the bundle size.
+
+	```bash
+	bunx vite-bundle-analyzer 
+	```
+
+	Current production bundle size: 
+	
+	> 10 chunks of 667.18 KB (gzip: 265.70 KB)
+
+	bunx vitest --run 

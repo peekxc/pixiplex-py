@@ -384,6 +384,31 @@
 <div class="mkapi-document"> 
 	<p>Creates a PIXI Graphics object for rendering network links</p>
 </div>
+## generate_links_graphics {#generate_links_graphics .hide}
+<p class="mkapi-object mkapi-page-source" id=generate_links_graphics>
+<span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">generate_links_graphics</span>(
+	
+	<span class="mkapi-arg">links</span>: <span class="mkapi-ann">Array</span>
+	)
+	 -> 
+			<span class="mkapi-ann">Array.&lt;Graphics&gt;</span>
+</p>
+<div class="mkapi-document"> 
+	<p>Creates per-link PIXI Graphics objects for incremental edge redraws</p>
+		<p class="mkapi-section"> 
+		<span class="mkapi-object-link">
+			<span class="mkapi-section-toggle" title="Toggle methods">
+				<i class="fa-regular fa-square-minus"></i>
+			</span>
+		</span>
+		<span class="mkapi-section-name">Parameters:</span>
+		<div class="mkapi-section-content">
+		<ul class="mkapi-item-list">
+			<li> <span class="mkapi-item-name mkapi-arg">links</span> <span class="mkapi-dash">—</span> Array of link objects with source/target node references </li>
+		</ul>
+		</div>
+		</p>
+</div>
 ## generate_polygon_graphics {#generate_polygon_graphics .hide}
 <p class="mkapi-object mkapi-page-source" id=generate_polygon_graphics>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">generate_polygon_graphics</span>(
@@ -1128,10 +1153,10 @@ Optionally fits the graph to the viewport bounds and updates force simulation ce
 		<span class="mkapi-section-name">Parameters:</span>
 		<div class="mkapi-section-content">
 		<ul class="mkapi-item-list">
-			<li> <span class="mkapi-item-name mkapi-arg">name</span> <span class="mkapi-dash">—</span> Name identifier for the force </li>
-			<li> <span class="mkapi-item-name mkapi-arg">distance</span> <span class="mkapi-dash">—</span> Desired distance between linked nodes </li>
-			<li> <span class="mkapi-item-name mkapi-arg">strength</span> <span class="mkapi-dash">—</span> Strength of the spring force </li>
-			<li> <span class="mkapi-item-name mkapi-arg">iterations</span> <span class="mkapi-dash">—</span> Number of iterations for force calculation </li>
+			<li> <span class="mkapi-item-name mkapi-arg">name</span> <span class="mkapi-dash">—</span> Name of the link force. </li>
+			<li> <span class="mkapi-item-name mkapi-arg">distance</span> <span class="mkapi-dash">—</span> Desired distance between linked nodes. </li>
+			<li> <span class="mkapi-item-name mkapi-arg">strength</span> <span class="mkapi-dash">—</span> Strength of the link force. </li>
+			<li> <span class="mkapi-item-name mkapi-arg">iterations</span> <span class="mkapi-dash">—</span> Number of iterations for the link force calculation. </li>
 		</ul>
 		</div>
 		</p>
@@ -1182,10 +1207,6 @@ Optionally fits the graph to the viewport bounds and updates force simulation ce
 	<span class="mkapi-arg">params.forceName.type</span>: <span class="mkapi-ann">string</span>
 , 
 	<span class="mkapi-arg">params.forceName.enabled</span>: <span class="mkapi-ann">boolean</span>
-, 
-	<span class="mkapi-arg">params.forceName.x</span>: <span class="mkapi-ann">number</span>
-, 
-	<span class="mkapi-arg">params.forceName.y</span>: <span class="mkapi-ann">number</span>
 	)
 	 -> 
 			<span class="mkapi-ann">boolean</span>
@@ -1206,8 +1227,6 @@ Parses force settings object and applies appropriate force types with their para
 			<li> <span class="mkapi-item-name mkapi-arg">params.forceName</span> <span class="mkapi-dash">—</span> Individual force configuration </li>
 			<li> <span class="mkapi-item-name mkapi-arg">params.forceName.type</span> <span class="mkapi-dash">—</span> Type of force (e.g., &quot;forceCenter&quot;, &quot;forceManyBody&quot;) </li>
 			<li> <span class="mkapi-item-name mkapi-arg">params.forceName.enabled</span> <span class="mkapi-dash">—</span> Whether the force is enabled </li>
-			<li> <span class="mkapi-item-name mkapi-arg">params.forceName.x</span> <span class="mkapi-dash">—</span> X-coordinate for center forces </li>
-			<li> <span class="mkapi-item-name mkapi-arg">params.forceName.y</span> <span class="mkapi-dash">—</span> Y-coordinate for center forces </li>
 		</ul>
 		</div>
 		</p>
@@ -1237,63 +1256,6 @@ Parses force settings object and applies appropriate force types with their para
 		</ul>
 		</div>
 		</p>
-</div>
-## onDragMove {#onDragMove .hide}
-<p class="mkapi-object mkapi-page-source" id=onDragMove>
-<span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">onDragMove</span>(
-	
-	<span class="mkapi-arg">event</span>: <span class="mkapi-ann">PointerEvent</span>
-, 
-	<span class="mkapi-arg">node</span>: <span class="mkapi-ann">Graphics</span>
-	)
-	</p>
-<div class="mkapi-document"> 
-	<p>Handles pointer move events during drag operations</p>
-		<p class="mkapi-section"> 
-		<span class="mkapi-object-link">
-			<span class="mkapi-section-toggle" title="Toggle methods">
-				<i class="fa-regular fa-square-minus"></i>
-			</span>
-		</span>
-		<span class="mkapi-section-name">Parameters:</span>
-		<div class="mkapi-section-content">
-		<ul class="mkapi-item-list">
-			<li> <span class="mkapi-item-name mkapi-arg">event</span> <span class="mkapi-dash">—</span> The pointer move event </li>
-			<li> <span class="mkapi-item-name mkapi-arg">node</span> <span class="mkapi-dash">—</span> The node being dragged </li>
-		</ul>
-		</div>
-		</p>
-</div>
-## onDragStart {#onDragStart .hide}
-<p class="mkapi-object mkapi-page-source" id=onDragStart>
-<span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">onDragStart</span>(
-	
-	<span class="mkapi-arg">node</span>: <span class="mkapi-ann">Graphics</span>
-	)
-	</p>
-<div class="mkapi-document"> 
-	<p>Initiates drag operation for a node</p>
-		<p class="mkapi-section"> 
-		<span class="mkapi-object-link">
-			<span class="mkapi-section-toggle" title="Toggle methods">
-				<i class="fa-regular fa-square-minus"></i>
-			</span>
-		</span>
-		<span class="mkapi-section-name">Parameters:</span>
-		<div class="mkapi-section-content">
-		<ul class="mkapi-item-list">
-			<li> <span class="mkapi-item-name mkapi-arg">node</span> <span class="mkapi-dash">—</span> The node to start dragging </li>
-		</ul>
-		</div>
-		</p>
-</div>
-## onDragEnd {#onDragEnd .hide}
-<p class="mkapi-object mkapi-page-source" id=onDragEnd>
-<span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">onDragEnd</span>(
-)
-	</p>
-<div class="mkapi-document"> 
-	<p>Ends drag operation and resumes viewport interaction</p>
 </div>
 
 

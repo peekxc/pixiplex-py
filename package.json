@@ -1,12 +1,12 @@
 {
 	"scripts": {
-		"dev": "vite",
-		"build": "npm run build:widget && npm run build:pixinet && npm run build:demo && npm run build:css",
+		"dev": "vite demo --config demo/vite.config.js",
+		"build": "bun run build:widget && bun run build:pixinet && bun run build:demo && bun run build:css",
 		"build:widget": "vite build --config vite.widget.config.js",
 		"build:pixinet": "vite build --config vite.pixinet.config.js",
-		"build:demo": "vite build",
+		"build:demo": "vite build demo --config demo/vite.config.js",
 		"build:css": "cp src/pixiplex/widget.css src/pixiplex/static/widget.css",
-		"preview": "vite preview",
+		"preview": "vite preview demo --config demo/vite.config.js",
 		"test:js": "vitest run",
 		"bench:js": "vitest bench --run"
 	},
@@ -31,6 +31,7 @@
 		"jsdoc-to-markdown": "^9.1.1",
 		"unocss": "^66.5.4",
 		"vite": "^7.1.3",
+		"vite-bundle-analyzer": "^1.3.6",
 		"vitest": "^3.2.4"
 	},
 	"type": "module",

@@ -4,8 +4,12 @@ dist
 .DS_Store
 pixiplex/static
 **/*.html
+!demo/index.html
 *.lock
-*.lockb 
+*.lockb
+!bun.lock
+!bun.lockb
+demo/dist
 
 # Python
 __pycache__

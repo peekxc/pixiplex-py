@@ -17,11 +17,12 @@ Because `pixiplex` is a library that spans both Python and JavaScript, it requir
 	%env ANYWIDGET_HMR=1
 	```
 	
-	The `_esm` field should be set to the bundled output of `esbuild` (w/ the appropriate watcher), i.e. 
+	The `_esm` field should be set to the bundled output in `src/pixiplex/static`.
+	During local widget development, run a Vite watch loop to keep `widget.js` and `pixinet.js` updated:
 	
 	```bash
-	npx esbuild@0.25.6 --bundle --format=esm --outdir=src/pixiplex/static \
-	src/pixiplex/widget.js src/pixiplex/pixinet.js --watch
+	bun run build:widget -- --watch
+	bun run build:pixinet -- --watch
 	```
 
 	With these commands, file edits on jupyter lab should trigger updates to the notebook instantly. 
@@ -31,18 +32,13 @@ Because `pixiplex` is a library that spans both Python and JavaScript, it requir
 
 
 === "JavaScript Widget"
-	The pure JS part of the library is developed via incrementally testing via the following workflow: 
-
-	1. Setup watchers for `index.pug` and `pixinet.js` via pug and esbuild, respectively. 
-	2. Run any http server from the `src/pixiplex/static` root level
+	A pure JS demo site to showcase and test the functionality is at `demo/index.html`.
 
 	```bash
-	npx pug src/pixiplex/index.pug --out src/pixiplex/static --watch
-	npx esbuild@0.25.6 --bundle --format=esm --outdir=src/pixiplex/static src/pixiplex/widget.js src/pixiplex/pixinet.js --watch
-	npx http-server src/pixiplex/static
+	bun run dev
 	```
 
-	This serves `index.html` statically; tweak `src/pixinet.js` or `index.pug` incrementally until desired functionality is verified. 
+	This provides full HMR for JavaScript and styles; tweak `demo/main.js` or `demo/index.html` incrementally until desired functionality is verified.
 
 === "Testing dashboard"
 	An interactive dashboard showcasing the functionality of the package can be run via the Panel command:
@@ -51,19 +47,38 @@ Because `pixiplex` is a library that spans both Python and JavaScript, it requir
 	panel serve src/pixiplex/panel_app.py
 	```
 
-=== "Production build"
-	To keep the size of the resulting JS files mall, using minifiers and dead-code elimination: 
+=== "Unit tests + benchmarks"
+	Run the Python unit tests and lightweight benchmark guardrails with:
 
 	```bash
-	npx esbuild@0.25.6 --bundle src/pixiplex/widget.js \
-	--outfile=src/pixiplex/static/widget.js \
-	--minify --format=esm --tree-shaking=true
+	python -m pytest src/tests
 	```
+
+	Benchmark-style tests currently cover:
+
+	- repeated `load_les_miserables()` parsing throughput
+	- `ForceConfig` construction overhead
+
+	Run JavaScript unit tests and benchmarks with:
+
+	```bash
+	bun run test:js
+	bun run bench:js
+	```
+
+=== "Production build"
+	To produce minified ESM outputs for the widget runtime and demo:
+
+	```bash
+	bun run build
+	```
+
+	The widget bundles are emitted to `src/pixiplex/static`, while the demo site is emitted to `demo/dist`.
 
 	Assets can be further compressed via e.g. [Brotli compression](https://blog.cloudflare.com/this-is-brotli-from-origin/):
 
 	```bash
-	npx brotli-cli compress src/pixiplex/static/widget.js
+	bunx brotli-cli compress src/pixiplex/static/widget.js
 	```
 
 === "Docs" 

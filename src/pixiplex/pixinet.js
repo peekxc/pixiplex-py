@@ -77,7 +77,7 @@ export const make_scale = (w, h) => {
 	const scale_x = scaleLinear().domain([0, 1]).range([0, w]);
 	const scale_y = scaleLinear().domain([0, 1]).range([0, h]);
 	const scale_xy = (xy) => { return [scale_x(xy[0]), scale_y(xy[1])] }
-	const invert_scale_xy = (xy) => { return [scale_x.invert(xy[0]), scale_x.invert(xy[1])] }
+	const invert_scale_xy = (xy) => { return [scale_x.invert(xy[0]), scale_y.invert(xy[1])] }
 	return { scale: scale_xy, invert: invert_scale_xy };
 }
 
@@ -87,6 +87,29 @@ export const NODE_STYLE = {
 	color: 0x650A5A,
 	alpha: 1,
 	lineStyle: { size: 1.5, color: 0xFFFFFF }
+}
+
+const COMMUNITY_PALETTE = [
+	0x4e79a7,
+	0xf28e2b,
+	0xe15759,
+	0x76b7b2,
+	0x59a14f,
+	0xedc948,
+	0xb07aa1,
+	0xff9da7,
+	0x9c755f,
+	0xbab0ab,
+];
+
+export const default_node_styles = (nodes, base = NODE_STYLE) => {
+	if (!nodes || nodes.length === 0){ return base; }
+	const hasGroups = nodes.every((node) => typeof node.group !== "undefined" && node.group !== null);
+	if (!hasGroups){ return base; }
+
+	const groups = [...new Set(nodes.map((node) => node.group))].sort((a, b) => a - b);
+	const groupColor = fromPairs(groups.map((group, i) => [group, COMMUNITY_PALETTE[i % COMMUNITY_PALETTE.length]]));
+	return nodes.map((node) => ({ ...base, color: groupColor[node.group] }));
 }
 
 /** Default styling configuration for network links/edges */
@@ -113,7 +136,8 @@ const FORCE_PARAMS = {
   forceCenter: ['x', 'y'],
   forceCollide: ['radius', 'strength', 'iterations'],
   forceX: ['strength', 'x'],
-  forceY: ['strength', 'y']
+  forceY: ['strength', 'y'],
+  forceRadial: ['radius', 'x', 'y', 'strength']
 };
 
 /**
@@ -241,7 +265,7 @@ export const register_ticker = (app, stage) => {
 	const ticker = Ticker.shared;
 	ticker.autoStart = false;
 	ticker.stop();
-	ticker.maxFPS = 30; // TODO: make configurable
+	ticker.maxFPS = 60; // TODO: make configurable
 	ticker.add((ticker) => {
 		dispatcher.call("tick", this);
 	});
@@ -293,6 +317,16 @@ export const generate_links_graphic = () => {
 }
 
 /**
+ * Creates per-link PIXI Graphics objects for incremental edge redraws
+ * @function
+ * @param {Array} links - Array of link objects with source/target node references
+ * @returns {Array<Graphics>} Array of PIXI Graphics objects, one per edge
+ */
+export const generate_links_graphics = (links) => {
+	return links.map(() => new Graphics());
+}
+
+/**
  * Creates PIXI Graphics objects for polygon overlays
  * @function
  * @param {Array} polygons - Array of polygon data objects
@@ -341,6 +375,48 @@ export const build_nodes = (nodes, ns) => {
  * @param {Object|Array} ls - Link style configuration
  */
 export const build_links = (links, link_gfx, ls) => {
+	if (link_gfx.constructor === Array){
+		if (ls.constructor !== Object){
+			console.log("Failed to apply link styling.");
+			return 0;
+		}
+		let redrawn = 0;
+		links.forEach((link, i) => {
+			const gfx = link_gfx[i];
+			const { source, target } = link;
+			const alpha = (ls.alpha === undefined) ? 1 : ls.alpha;
+			const styleChanged =
+				gfx.__lineWidth !== ls.lineWidth ||
+				gfx.__lineColor !== ls.color ||
+				gfx.__lineAlpha !== alpha;
+			const moved =
+				gfx.__sx !== source.x ||
+				gfx.__sy !== source.y ||
+				gfx.__tx !== target.x ||
+				gfx.__ty !== target.y;
+
+			if (!styleChanged && !moved){
+				return;
+			}
+			redrawn += 1;
+
+			gfx.clear();
+			gfx
+				.moveTo(source.x, source.y)
+				.lineTo(target.x, target.y)
+				.stroke({ width: ls.lineWidth, color: ls.color, alpha });
+
+			gfx.__lineWidth = ls.lineWidth;
+			gfx.__lineColor = ls.color;
+			gfx.__lineAlpha = alpha;
+			gfx.__sx = source.x;
+			gfx.__sy = source.y;
+			gfx.__tx = target.x;
+			gfx.__ty = target.y;
+		});
+		return redrawn;
+	}
+
 	if (ls.constructor === Array && ls.length == links.length){
 		// console.log("Drawing lines as arrays")
 		links.forEach((link, i) => { 
@@ -359,7 +435,9 @@ export const build_links = (links, link_gfx, ls) => {
 			link_gfx.moveTo(source.x, source.y).lineTo(target.x, target.y)
 		});
 		link_gfx.stroke({ width: ls.lineWidth, color: ls.color });
+		return links.length;
 	}
+	return 0;
 }
 
 /**
@@ -709,6 +787,49 @@ class Pixiplex {
 		this.polygon_style = POLYGON_STYLE;
 		
 		this.forces = forces;
+		this.perf_stats = { edgesRedrawn: 0 };
+		this.force_registry = {};
+		this._drag_enabled = false;
+		this._drag_target = null;
+		this._drag_handlers = null;
+		this.performance_mode = false;
+		this._init_state = "idle";
+		this._init_promise = null;
+		this._init_error = null;
+	}
+
+	_with_timeout(promise, timeout_ms = 5000, label = "operation"){
+		return Promise.race([
+			promise,
+			new Promise((_, reject) => {
+				setTimeout(() => reject(new Error(`Pixiplex ${label} timed out after ${timeout_ms}ms`)), timeout_ms);
+			}),
+		]);
+	}
+
+	_register_force(name, type){
+		this.force_registry[name] = type;
+	}
+
+	remove_force(name){
+		this.sim?.force(name, null);
+		delete this.force_registry[name];
+	}
+
+	get_force_snapshot(){
+		if (!this.sim){ return []; }
+		return Object.entries(this.force_registry).map(([name, type]) => {
+			const force = this.sim.force(name);
+			const active = typeof force !== "undefined" && force !== null;
+			const params = {};
+			if (active){
+				(FORCE_PARAMS[type] || []).forEach((param) => {
+					const getter = force[param];
+					params[param] = (typeof getter === "function") ? getter.call(force) : undefined;
+				});
+			}
+			return { name, type, active, params };
+		});
 	}
 
 	/**
@@ -720,26 +841,39 @@ class Pixiplex {
 	 * @param {boolean} center - Whether to center the graph initially
 	 */
 	async init(drag = true, center = true){
-			// Pixi & viewport related initializations
-			await this._init_application();
-			this._init_viewport();
-			this._init_ticker();
-	
-			// Rendering & graph related initializations
-			// this.links = links; 
-			// this.nodes = nodes;
-			this._init_graphics(this.nodes, this.links)
-			add_items(this.vp, [this.links_gfx]); // add links to viewport
-			add_items(this.vp, this.nodes_gfx);   // add nodes to viewport
-			this.ticker.add((ticker) => {
-				build_links(this.links, this.links_gfx, this.line_style);
+			if (this._init_state === "ready"){ return this; }
+			if (this._init_state === "initializing" && this._init_promise){ return this._init_promise; }
+
+			this._init_state = "initializing";
+			this._init_error = null;
+			this._init_promise = (async () => {
+				// Pixi & viewport related initializations
+				await this._init_application();
+				this._init_viewport();
+				this._init_ticker();
+		
+				// Rendering & graph related initializations
+				this._init_graphics(this.nodes, this.links)
+				add_items(this.vp, this.links_gfx); // add links to viewport
+				add_items(this.vp, this.nodes_gfx);   // add nodes to viewport
+				this.ticker.add((ticker) => {
+					this.perf_stats.edgesRedrawn = build_links(this.links, this.links_gfx, this.line_style);
+				});
+				this._init_force();
+				
+				// Runtime initializations
+				this.ticker.start();
+				if (drag) { this.enable_drag(); }
+				if (center) { this.center_graph(true); }
+				this._init_state = "ready";
+				return this;
+			})().catch((err) => {
+				this._init_state = "failed";
+				this._init_error = err;
+				throw err;
 			});
-			this._init_force();
-			
-			// Runtime initializations
-			this.ticker.start();
-			if (drag) { this.enable_drag(); }
-			if (center) { this.center_graph(true); }
+
+			return this._init_promise;
 	}
 
 	/**
@@ -769,9 +903,7 @@ class Pixiplex {
 		// this.view.style.height = this.height + 'px'
 		// set_dpi(this.view, 288);
 		// console.log(this.view.width);
-		this.app = new Application();
 		this.pixel_ratio = devicePixelRatio;
-		// const ratio = 1.0;
 		let app_params = {
 			// canvas: this.view,
 			width: this.width,  // NOTE: this is preferred over making own canvas!
@@ -779,6 +911,7 @@ class Pixiplex {
 			antialias: true, 
 			backgroundColor: 0xededed, 
 			resolution: this.pixel_ratio,  // NOTE: world coordinate calculations are affected by resolution!
+			preference: "webgl",
 			// resolution: 1.0,
 			sharedTicker: true, // 
 			transparent: true,
@@ -787,9 +920,34 @@ class Pixiplex {
 			forceCanvas: false, // NOTE: this can force CPU? 
 			autoStart: false, // <- note the animation updates won't be immediate! 
 			autoDensity: true,  // this acts as autoResize
-			failIfMajorPerformanceCaveat: true
+			failIfMajorPerformanceCaveat: false
 		}
-		await this.app.init(assign(app_params, options));
+
+		let resolved_app = null;
+		let last_error = null;
+		const attempt_configs = [
+			assign({}, app_params, options),
+			assign({}, app_params, options, { antialias: false, resolution: 1, powerPreference: "low-power" }),
+		];
+
+		for (let i = 0; i < attempt_configs.length; i++){
+			const app = new Application();
+			try {
+				await this._with_timeout(app.init(attempt_configs[i]), 5000, `renderer init attempt ${i + 1}`);
+				resolved_app = app;
+				break;
+			} catch (err){
+				last_error = err;
+				console.warn(`Pixiplex: renderer init attempt ${i + 1} failed`, err);
+				try { app.destroy(); } catch (_) {}
+			}
+		}
+
+		if (!resolved_app){
+			throw last_error || new Error("Pixiplex failed to initialize renderer");
+		}
+
+		this.app = resolved_app;
 		this.view = this.app.canvas
 		this.view.style.width = this.width
 		this.view.style.height = this.height
@@ -864,7 +1022,7 @@ class Pixiplex {
 			
 			// Merge new Graphics instances w/ node attributes, then 'build' by apply the styling
 			this.nodes_gfx = map(nodes, (node) => { return assign(new Graphics(), node); })
-			build_nodes(this.nodes_gfx, this.node_style)
+			build_nodes(this.nodes_gfx, default_node_styles(this.nodes_gfx, this.node_style))
 			
 			// Populate the links with node graphic references	(used to be resolve_links)
 			const id_map = fromPairs(this.nodes_gfx.map((node, i) => { return [node.id, i]; }));
@@ -872,7 +1030,7 @@ class Pixiplex {
 				link.source = link.source instanceof Graphics ? link.source : this.nodes_gfx[id_map[link.source]];
 				link.target = link.target instanceof Graphics ? link.target : this.nodes_gfx[id_map[link.target]];
 			});
-			this.links_gfx = generate_links_graphic();
+			this.links_gfx = generate_links_graphics(links);
 			build_links(links, this.links_gfx, this.line_style);
 		}
 		return [this.nodes_gfx, this.links_gfx];
@@ -889,6 +1047,9 @@ class Pixiplex {
 			this.sim = forceSimulation(this.nodes_gfx); 
 			this.sim.stop();
 			this.sim.alpha(1.0); // no restart needed
+			this.sim.alphaMin(0.001);
+			this.sim.alphaDecay(1 - Math.pow(this.sim.alphaMin(), 1 / 300));
+			this.sim.velocityDecay(0.4);
 		}
 
 		// Apply forces if they exist 
@@ -922,74 +1083,59 @@ class Pixiplex {
 	 */
 	enable_drag(){
 		if (!Object.hasOwn(this, "nodes_gfx")){ return false; }
+		if (this._drag_enabled){ return true; }
 
 		// Make sure the viewport is interactive
 		this.vp.interactive = true; 
 		this.vp.visible = true; 
 		// this.vp.hitArea = this.vp.getBounds();
-		
-		// From: https://pixijs.com/8.x/examples/events/dragging
-		let dragTarget = null;
-		let viewport = this.vp; 
-		let dispatcher = this.dispatcher;
-		let sim = this.sim;
 
-		/**
-		 * Handles pointer move events during drag operations
-		 * @param {PointerEvent} event - The pointer move event
-		 * @param {Graphics} node - The node being dragged
+		if (!this._drag_handlers){
+			let viewport = this.vp;
+			let sim = this.sim;
 
-		*/
-		function onDragMove(event, node){
-			// this == viewport
-			if (dragTarget) {
-				dragTarget.parent.toLocal(event.global, null, dragTarget.position);
-				dragTarget.fx = dragTarget.position.x
-				dragTarget.fy = dragTarget.position.y; 
-				// dispatcher.call("dragging.force")
-			}
-		}
+			const onDragMove = (event) => {
+				if (this._drag_target) {
+					this._drag_target.parent.toLocal(event.global, null, this._drag_target.position);
+					this._drag_target.fx = this._drag_target.position.x;
+					this._drag_target.fy = this._drag_target.position.y;
+				}
+			};
 
-		/**
-		 * Initiates drag operation for a node
-		 * @param {Graphics} node - The node to start dragging
+			const onDragStart = function(){
+				viewport.plugins.get("drag").pause();
+				this._pixiplex.enable_force();
+				this._pixiplex._drag_target = this;
+				viewport.on('pointermove', onDragMove);
 
-		*/
-		function onDragStart(node){
-			viewport.plugins.get("drag").pause();
-			dragTarget = this;
-			viewport.on('pointermove', onDragMove);
-			
-			// Force-related 
-			dragTarget.fx = dragTarget.x; dragTarget.fy = dragTarget.y; 
-			sim?.alphaTarget(0.3)?.restart();
-			// dispatcher.call("start.force")
-		}
+				this._pixiplex._drag_target.fx = this._pixiplex._drag_target.x;
+				this._pixiplex._drag_target.fy = this._pixiplex._drag_target.y;
+				sim?.alphaTarget(0.3)?.restart();
+			};
 
-		/**
-		 * Ends drag operation and resumes viewport interaction
+			const onDragEnd = () => {
+				if (this._drag_target){
+					sim?.alphaTarget(0);
+					this._drag_target.fx = null;
+					this._drag_target.fy = null;
+					viewport.off('pointermove', onDragMove);
+					this._drag_target = null;
+				}
+				viewport.plugins.get("drag").resume();
+			};
 
-		*/
-		function onDragEnd(){
-			if (dragTarget){
-				sim?.alphaTarget(0);
-				dragTarget.fx = null; dragTarget.fy = null; 
-
-				viewport.off('pointermove', onDragMove);
-				dragTarget = null;
-			}
-			// dispatcher.call("end.force")
-			viewport.plugins.get("drag").resume();
+			this._drag_handlers = { onDragStart, onDragMove, onDragEnd };
 		}
 
 		// Attach a pointerdown event to every node and pointer up to the viewport
-		this.vp.on('pointerup', onDragEnd);
-		this.vp.on('pointerupoutside', onDragEnd);
+		this.vp.on('pointerup', this._drag_handlers.onDragEnd);
+		this.vp.on('pointerupoutside', this._drag_handlers.onDragEnd);
 		this.nodes_gfx.forEach((node) => {
-			// compose(pixi_drag(node))(drag_dispatcher(node));
+			node._pixiplex = this;
 			node.interactive = true; 
-			node.on("pointerdown", onDragStart, node);
+			node.on("pointerdown", this._drag_handlers.onDragStart);
 		});
+		this._drag_enabled = true;
 		return true;
 	}
 
@@ -999,18 +1145,38 @@ class Pixiplex {
 	 */
 	disable_drag(){
 		console.log("disabling drag");
+		if (!this._drag_enabled){ return; }
+		if (this._drag_handlers){
+			this.vp.off('pointerup', this._drag_handlers.onDragEnd);
+			this.vp.off('pointerupoutside', this._drag_handlers.onDragEnd);
+			this.vp.off('pointermove', this._drag_handlers.onDragMove);
+		}
+		if (this._drag_target){
+			this._drag_target.fx = null;
+			this._drag_target.fy = null;
+			this._drag_target = null;
+		}
 		this.nodes_gfx.forEach((node) => {
+			if (this._drag_handlers){
+				node.off("pointerdown", this._drag_handlers.onDragStart);
+			}
 			node.interactive = false; 
-			// node.on("pointerdown", null);
 		});
+		this._drag_enabled = false;
 	}
 
 	/**
 	 * Enables force simulation by connecting the dispatcher tick event to simulation updates
 	 */
 	enable_force(){
+		if (!Object.hasOwn(this, "sim")){ return; }
 		this.dispatcher.on("tick.force", () => {
 			this.sim.tick(); 
+			const settled = this.sim.alpha() <= (this.sim.alphaMin() + 0.0025);
+			if (settled){
+				this.disable_force();
+				this.sim.stop();
+			}
 		});
 		// Attach dispatchers for force events
 		// force_drag(this.sim)(this.dispatcher);
@@ -1021,6 +1187,24 @@ class Pixiplex {
 	 */
 	disable_force(){
 		this.dispatcher.on("tick.force", null);
+		this.sim?.alphaTarget(0);
+	}
+
+	set_performance_mode(enabled = true){
+		this.performance_mode = enabled;
+		if (this.ticker){
+			this.ticker.maxFPS = enabled ? 45 : 60;
+		}
+		if (this.app?.renderer){
+			const target_resolution = enabled ? 1 : this.pixel_ratio;
+			if (this.app.renderer.resolution !== target_resolution){
+				this.app.renderer.resolution = target_resolution;
+				this.app.renderer.resize(this.width, this.height);
+			}
+		}
+		if (this.app?.stage){
+			this.app.stage.roundPixels = enabled;
+		}
 	}
 
 	/**
@@ -1069,6 +1253,7 @@ class Pixiplex {
 		const yc = (y === undefined) ? this.height * this.scale / 2 : y; 
 		console.log("centering at: ", xc, yc);
 		this.sim.force(name, forceCenter(xc, yc)); // register the link force
+		this._register_force(name, "forceCenter");
 	}
 
 	/**
@@ -1087,6 +1272,7 @@ class Pixiplex {
 		}
 		link_force.iterations(iterations || 1);
 		this.sim.force(name, link_force); // register the link force
+		this._register_force(name, "forceLink");
 	}
 
 	/**
@@ -1101,9 +1287,10 @@ class Pixiplex {
 		let nbody_force = forceManyBody();
 		nbody_force.strength(strength || -30);
 		nbody_force.theta(theta || 0.90);
-		nbody_force.distanceMin(strength || 1.0);
-		nbody_force.distanceMax(strength || Infinity);
+		nbody_force.distanceMin(distanceMin ?? 1.0);
+		nbody_force.distanceMax(distanceMax ?? Infinity);
 		this.sim.force(name, nbody_force); // register the link force
+		this._register_force(name, "forceManyBody");
 	}
 
 	force_x(name = "x", x = undefined, strength = undefined){
@@ -1111,6 +1298,7 @@ class Pixiplex {
 		x_force.x(x || this.width / 2);
 		x_force.strength(strength || 0.1);
 		this.sim.force(name, x_force);
+		this._register_force(name, "forceX");
 	}
 
 	force_y(name = "y", y = undefined, strength = undefined){
@@ -1118,6 +1306,7 @@ class Pixiplex {
 		y_force.y(y || this.height / 2);
 		y_force.strength(strength || 0.1);
 		this.sim.force(name, y_force);
+		this._register_force(name, "forceY");
 	}
 
 	force_radial(name = "ra", radius = undefined, x = undefined, y = undefined, strength = undefined){
@@ -1127,6 +1316,7 @@ class Pixiplex {
 		radial_force.y(y || this.height / 2);
 		radial_force.strength(strength || 0.1)
 		this.sim.force(name, radial_force);
+		this._register_force(name, "forceRadial");
 	}
 
 	/**

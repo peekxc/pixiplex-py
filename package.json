@@ -1,9 +1,14 @@
 {
 	"scripts": {
-		"dev": "npm run build -- --sourcemap=inline --watch",
-		"pug": "npx pug src/index.pug --out pixiplex/static",
-		"bundle": "npx esbuild --bundle --format=esm --outdir=pixiplex/static src/widget.js src/pixinet.js",
-		"serve": "npx esbuild src/widget.js --bundle --servedir=pixiplex/static --outdir=pixiplex/static"
+		"dev": "vite",
+		"build": "npm run build:widget && npm run build:pixinet && npm run build:demo && npm run build:css",
+		"build:widget": "vite build --config vite.widget.config.js",
+		"build:pixinet": "vite build --config vite.pixinet.config.js",
+		"build:demo": "vite build",
+		"build:css": "cp src/pixiplex/widget.css src/pixiplex/static/widget.css",
+		"preview": "vite preview",
+		"test:js": "vitest run",
+		"bench:js": "vitest bench --run"
 	},
 	"dependencies": {
 		"@pixi/events": "^7.4.2",
@@ -15,16 +20,19 @@
 		"d3-polygon": "^3.0.1",
 		"d3-scale": "^4.0.2",
 		"d3-selection": "^3.0.0",
-		"esbuild": "0.25.6",
 		"lodash-es": "^4.17.21",
 		"pixi-viewport": "^6.0.3",
 		"pixi.js": "^8.6.6",
-		"pug": "^3.0.3",
-		"pug-cli": "^1.0.0-alpha6",
 		"pyodide": "^0.27.2"
 	},
 	"devDependencies": {
-		"jsdoc-to-markdown": "^9.1.1"
+		"@unocss/preset-wind4": "^66.5.4",
+		"@unocss/vite": "^66.5.4",
+		"jsdoc-to-markdown": "^9.1.1",
+		"unocss": "^66.5.4",
+		"vite": "^7.1.3",
+		"vitest": "^3.2.4"
 	},
-	"type": "module"
+	"type": "module",
+	"packageManager": "bun@1.1.24"
 }

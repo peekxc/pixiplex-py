@@ -381,10 +381,13 @@ export const build_links = (links, link_gfx, ls) => {
 			return 0;
 		}
 		let redrawn = 0;
-		links.forEach((link, i) => {
+		const alpha = (ls.alpha === undefined) ? 1 : ls.alpha;
+		const strokeStyle = { width: ls.lineWidth, color: ls.color, alpha };
+		for (let i = 0; i < links.length; i++) {
+			const link = links[i];
 			const gfx = link_gfx[i];
-			const { source, target } = link;
-			const alpha = (ls.alpha === undefined) ? 1 : ls.alpha;
+			const source = link.source;
+			const target = link.target;
 			const styleChanged =
 				gfx.__lineWidth !== ls.lineWidth ||
 				gfx.__lineColor !== ls.color ||
@@ -396,7 +399,7 @@ export const build_links = (links, link_gfx, ls) => {
 				gfx.__ty !== target.y;
 
 			if (!styleChanged && !moved){
-				return;
+				continue;
 			}
 			redrawn += 1;
 
@@ -404,7 +407,7 @@ export const build_links = (links, link_gfx, ls) => {
 			gfx
 				.moveTo(source.x, source.y)
 				.lineTo(target.x, target.y)
-				.stroke({ width: ls.lineWidth, color: ls.color, alpha });
+				.stroke(strokeStyle);
 
 			gfx.__lineWidth = ls.lineWidth;
 			gfx.__lineColor = ls.color;
@@ -413,7 +416,7 @@ export const build_links = (links, link_gfx, ls) => {
 			gfx.__sy = source.y;
 			gfx.__tx = target.x;
 			gfx.__ty = target.y;
-		});
+		}
 		return redrawn;
 	}
 
@@ -430,11 +433,13 @@ export const build_links = (links, link_gfx, ls) => {
 	else if (ls.constructor == Object){
 		// TODO: make this as optimized as possible
 		link_gfx.clear();
-		links.forEach((link) => { 
-			const { source, target } = link;
+		for (let i = 0; i < links.length; i++) {
+			const link = links[i];
+			const source = link.source;
+			const target = link.target;
 			link_gfx.moveTo(source.x, source.y).lineTo(target.x, target.y)
-		});
-		link_gfx.stroke({ width: ls.lineWidth, color: ls.color });
+		}
+		link_gfx.stroke({ width: ls.lineWidth, color: ls.color, alpha: (ls.alpha === undefined) ? 1 : ls.alpha });
 		return links.length;
 	}
 	return 0;

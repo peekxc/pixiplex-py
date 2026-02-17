@@ -8,10 +8,21 @@ repo_url: https://github.com/peekxc/pixiplex-py
 
 nav: 
   - index.md
+  - overview.md
   - workflows.md
+  - renderers.md
   - Reference: 
     - PY API: $api/pixiplex.pixinet 
-    - JS API: api/pixinet.md
+    - JS API:
+      - Core (pixinet.js): api/pixinet.md
+      - Renderers:
+        - Index: api/renderers/index.md
+        - Runtime: api/renderers/runtime.md
+        - Individual: api/renderers/individual.md
+        - Grouped: api/renderers/grouped.md
+        - Mesh: api/renderers/mesh.md
+        - WebGL: api/renderers/webgl.md
+        - Types: api/renderers/types.md
 
 theme:
   name: material

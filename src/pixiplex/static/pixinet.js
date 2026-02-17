@@ -29414,7 +29414,7 @@ class MM {
   * @returns {Promise<void>}
   */
   async _init_application(t) {
-    this.pixel_ratio = devicePixelRatio;
+    this.pixel_ratio = Math.min(devicePixelRatio || 1, 1.5);
     let e = {
       // canvas: this.view,
       width: this.width,
@@ -29459,7 +29459,7 @@ class MM {
     }
     if (!i)
       throw new Error("Pixiplex failed to initialize renderer");
-    this.app = i, this.view = this.app.canvas, this.view.style.width = this.width, this.view.style.height = this.height, this.view.style.left = 0, this.view.style.top = 0, this.view.onwheel = function(n) {
+    this.app = i, this.view = this.app.canvas, this.view.style.width = `${this.width}px`, this.view.style.height = `${this.height}px`, this.view.style.left = "0px", this.view.style.top = "0px", this.view.style.display = "block", this.view.onwheel = function(n) {
       n.preventDefault();
     }, this.view.onmousewheel = function(n) {
       n.preventDefault();

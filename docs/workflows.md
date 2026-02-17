@@ -88,14 +88,29 @@ Because `pixiplex` is a library that spans both Python and JavaScript, it requir
 
 === "Docs" 
 	The docsite is built from markdown documents with `mkdocs-material`. The API reference pages are generated using `mkapi`
-	for Python and `jsdoc2md` for JavaScript. 
+	for Python and `jsdoc-to-markdown` for JavaScript. 
 	
-	The former is integrated into mkdocs via a plugin, whereas the latter requires manual execution. 
+	Run JavaScript doc generation first, then build the full site:
 
 	```bash
-	jsdoc2md --template templates/sig-style.hbs --files src/pixiplex/pixinet.js > docs/api/pixinet.md \n
-	mkdocs build --clean
+	npm run docs:api
+	npm run docs:build
 	```
+
+	`docs:api` generates:
+
+	- `docs/api/pixinet.md`
+	- `docs/api/renderers/index.md`
+	- `docs/api/renderers/runtime.md`
+	- `docs/api/renderers/individual.md`
+	- `docs/api/renderers/grouped.md`
+	- `docs/api/renderers/mesh.md`
+	- `docs/api/renderers/webgl.md`
+	- `docs/api/renderers/types.md`
+
+	!!! note
+		Use `npm run docs:api` rather than `bun run docs:api` for now.
+		The `jsdoc` toolchain invoked by `jsdoc-to-markdown` is currently unstable under Bun runtime execution.
 
 
 === "Bundle Analyzer"

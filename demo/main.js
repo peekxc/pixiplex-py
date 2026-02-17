@@ -1,16 +1,81 @@
 import "uno.css";
 import * as pn from "../src/pixiplex/pixinet.js";
+import { enableGroupedRenderer, enableIndividualRenderer, enableMeshRenderer, enableWebGLPrimitiveRenderer } from "../src/pixiplex/renderers.js";
 import graph from "../src/pixiplex/static/data/les_miserables.json";
 
 window.pn = pn;
 
 const pnCont = document.getElementById("pixiplex_container");
-const pp = new pn.Pixiplex(graph.nodes, graph.links, 1200, 800, 2.0);
+const renderModeBadge = document.getElementById("render_mode_badge");
+const toggleRenderModeButton = document.getElementById("toggle_render_mode");
+const searchParams = new URLSearchParams(window.location.search);
+const groupedNodesFlag = searchParams.get("groupedNodes");
+const modeParam = searchParams.get("renderMode");
+let currentRenderMode = modeParam || "per-node-graphics";
+if (!modeParam && (groupedNodesFlag === "1" || groupedNodesFlag === "true")) {
+  currentRenderMode = "grouped-nodes";
+}
+const validModes = new Set(["per-node-graphics", "grouped-nodes", "mesh-primitives", "webgl-primitives"]);
+if (!validModes.has(currentRenderMode)) {
+  currentRenderMode = "per-node-graphics";
+}
+
+const modeOrder = ["per-node-graphics", "grouped-nodes", "mesh-primitives", "webgl-primitives"];
+
+const cloneGraphData = (sourceGraph) => ({
+  nodes: sourceGraph.nodes.map((node) => ({ ...node })),
+  links: sourceGraph.links.map((link) => ({
+    ...link,
+    source: typeof link.source === "object" ? link.source.id : link.source,
+    target: typeof link.target === "object" ? link.target.id : link.target,
+  })),
+});
+
+const createPixiplexForMode = (mode) => {
+  const graphData = cloneGraphData(graph);
+  const instance = new pn.Pixiplex(graphData.nodes, graphData.links, 1200, 800, 2.0);
+
+  if (mode === "grouped-nodes") {
+    enableGroupedRenderer(instance);
+  } else if (mode === "mesh-primitives") {
+    enableMeshRenderer(instance);
+  } else if (mode === "webgl-primitives") {
+    enableWebGLPrimitiveRenderer(instance);
+  } else {
+    enableIndividualRenderer(instance);
+  }
+  return instance;
+};
+
+let pp = createPixiplexForMode(currentRenderMode);
+
+const getNextMode = (mode) => {
+  const currentIndex = modeOrder.indexOf(mode);
+  return modeOrder[(currentIndex + 1) % modeOrder.length];
+};
+
+const updateRenderModeUrl = (mode) => {
+  const nextParams = new URLSearchParams(window.location.search);
+  nextParams.set("renderMode", mode);
+  nextParams.delete("groupedNodes");
+  const query = nextParams.toString();
+  const nextUrl = `${window.location.pathname}${query ? `?${query}` : ""}`;
+  window.history.replaceState({}, "", nextUrl);
+};
+
+const updateRenderModeButton = () => {
+  if (!toggleRenderModeButton) {
+    return;
+  }
+  const targetMode = getNextMode(currentRenderMode);
+  toggleRenderModeButton.textContent = `Switch render mode (${targetMode})`;
+};
+
 window.pp = pp;
 const perfHud = document.getElementById("perf_hud");
 
-const BASE_NODE_STYLE = pn.default_node_styles(pp.nodes, pn.NODE_STYLE);
 const BASE_LINE_STYLE = { ...pn.LINE_STYLE };
+const getBaseNodeStyles = () => pn.default_node_styles(pp.nodes, pn.NODE_STYLE);
 
 const palette = [0x1d4ed8, 0x0f766e, 0xbe123c, 0x7e22ce, 0xea580c, 0x0369a1, 0x4f46e5, 0x166534];
 
@@ -154,7 +219,11 @@ const updateRendererUI = () => {
   if (!statusBadges.renderer) {
     return;
   }
-  statusBadges.renderer.textContent = `renderer: ${detectRendererLabel()}`;
+  statusBadges.renderer.textContent = `renderer: ${detectRendererLabel()} | ${currentRenderMode}`;
+  if (renderModeBadge) {
+    renderModeBadge.textContent = `canvas: ${currentRenderMode}`;
+  }
+  updateRenderModeButton();
 };
 
 const formatForceValue = (value) => {
@@ -244,6 +313,83 @@ const reheat = (alpha = 0.8) => {
 };
 
 const randomItem = (items) => items[Math.floor(Math.random() * items.length)];
+
+const applyNodeStyles = (styles) => {
+  if (typeof pp.set_node_styles === "function") {
+    pp.set_node_styles(styles);
+    return;
+  }
+  pn.build_nodes(pp.nodes_gfx, styles);
+};
+
+const destroyCurrentRenderer = () => {
+  try {
+    pp.disable_drag?.();
+    pp.disable_force?.();
+    pp.sim?.stop?.();
+    pp.ticker?.stop?.();
+  } catch (_) {
+    // best effort cleanup before replacing renderer
+  }
+
+  if (typeof pp._renderer?.destroy === "function") {
+    try {
+      pp._renderer.destroy();
+    } catch (_) {
+      // non-fatal cleanup path
+    }
+  }
+
+  if (pp.app) {
+    try {
+      pp.app.destroy();
+    } catch (_) {
+      // app may already be destroyed
+    }
+  }
+  pnCont.innerHTML = "";
+};
+
+const mountRendererForMode = async (mode) => {
+  const next = createPixiplexForMode(mode);
+  pp = next;
+  window.pp = pp;
+
+  await pp.init();
+  pnCont.appendChild(pp.view);
+  if (typeof pp._renderer?.attachToView === "function") {
+    pp._renderer.attachToView();
+  }
+  if (typeof pp._renderer?.resize === "function") {
+    pp._renderer.resize(pp.width, pp.height);
+  }
+
+  resetDefaultForces();
+  updateInteractionUI();
+  updateForceUI();
+  updateRendererUI();
+};
+
+const switchRenderMode = async (mode) => {
+  if (mode === currentRenderMode) {
+    return;
+  }
+  destroyCurrentRenderer();
+  currentRenderMode = mode;
+  updateRenderModeUrl(mode);
+  await mountRendererForMode(mode);
+};
+
+if (toggleRenderModeButton) {
+  toggleRenderModeButton.addEventListener("click", async () => {
+    toggleRenderModeButton.disabled = true;
+    try {
+      await switchRenderMode(getNextMode(currentRenderMode));
+    } finally {
+      toggleRenderModeButton.disabled = false;
+    }
+  });
+}
 
 const resetDefaultForces = () => {
   springDistance = 30;
@@ -404,36 +550,40 @@ document.getElementById("toggle_drag_mode").addEventListener("click", () => {
 
 document.getElementById("change_node_color_button").addEventListener("click", () => {
   const ns = { ...pn.NODE_STYLE, color: 0xff7518, radius: 8 };
-  pn.build_nodes(pp.nodes_gfx, ns);
+  applyNodeStyles(ns);
 });
 
 document.getElementById("change_node_colors_button").addEventListener("click", () => {
   const ns = pp.nodes.map((_, i) => ({ ...pn.NODE_STYLE, color: i % 2 === 0 ? 0xff7518 : 0x650a5a }));
-  pn.build_nodes(pp.nodes_gfx, ns);
+  applyNodeStyles(ns);
 });
 
 document.getElementById("randomize_colors_button").addEventListener("click", () => {
   const ns = pp.nodes.map(() => ({ ...pn.NODE_STYLE, color: randomItem(palette) }));
-  pn.build_nodes(pp.nodes_gfx, ns);
+  applyNodeStyles(ns);
 });
 
 document.getElementById("change_node_radius_button").addEventListener("click", () => {
-  pn.build_nodes(pp.nodes_gfx.slice(0, pp.nodes.length / 2), { ...pn.NODE_STYLE, radius: 5 });
-  pn.build_nodes(pp.nodes_gfx.slice(pp.nodes.length / 2), { ...pn.NODE_STYLE, radius: 10 });
+  const ns = pp.nodes.map((_, i) => ({ ...pn.NODE_STYLE, radius: i < pp.nodes.length / 2 ? 5 : 10 }));
+  applyNodeStyles(ns);
 });
 
 document.getElementById("change_node_radii_button").addEventListener("click", () => {
-  pn.build_nodes(pp.nodes_gfx, { ...pn.NODE_STYLE, radius: 10 });
+  applyNodeStyles({ ...pn.NODE_STYLE, radius: 10 });
 });
 
 document.getElementById("change_link_width_button").addEventListener("click", () => {
   pp.line_style = { ...pn.LINE_STYLE, lineWidth: 3 };
-  pn.build_links(pp.links, pp.links_gfx, pp.line_style);
+  if (pp.links_gfx) {
+    pn.build_links(pp.links, pp.links_gfx, pp.line_style);
+  }
 });
 
 document.getElementById("change_link_color_button").addEventListener("click", () => {
   pp.line_style = { ...pn.LINE_STYLE, color: 0x00ff88 };
-  pn.build_links(pp.links, pp.links_gfx, pp.line_style);
+  if (pp.links_gfx) {
+    pn.build_links(pp.links, pp.links_gfx, pp.line_style);
+  }
 });
 
 document.getElementById("shuffle_positions_button").addEventListener("click", () => {
@@ -447,9 +597,11 @@ document.getElementById("shuffle_positions_button").addEventListener("click", ()
 });
 
 document.getElementById("reset_styles_button").addEventListener("click", () => {
-  pn.build_nodes(pp.nodes_gfx, BASE_NODE_STYLE);
+  applyNodeStyles(getBaseNodeStyles());
   pp.line_style = { ...BASE_LINE_STYLE };
-  pn.build_links(pp.links, pp.links_gfx, pp.line_style);
+  if (pp.links_gfx) {
+    pn.build_links(pp.links, pp.links_gfx, pp.line_style);
+  }
 });
 
 document.getElementById("lasso_button").addEventListener("click", () => {
@@ -495,12 +647,7 @@ document.getElementById("charge_strength_slider").addEventListener("input", (eve
 
 const startApp = async () => {
   try {
-    await pp.init();
-    pnCont.appendChild(pp.view);
-    resetDefaultForces();
-    updateInteractionUI();
-    updateForceUI();
-    updateRendererUI();
+    await mountRendererForMode(currentRenderMode);
     requestAnimationFrame(updatePerfHud);
   } catch (error) {
     pnCont.innerHTML = `<div class="m-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">Failed to initialize Pixiplex renderer. Check browser console for details.<br/>${error?.message ?? error}</div>`;

@@ -10,6 +10,7 @@ pixiplex/static
 !bun.lock
 !bun.lockb
 demo/dist
+session*
 
 # Python
 __pycache__

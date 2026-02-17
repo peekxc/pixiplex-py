@@ -1,5 +1,5 @@
 
-## combinations {#combinations .hide}
+## combinations {#combinations }
 <p class="mkapi-object mkapi-page-source" id=combinations>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">combinations</span>(
 	
@@ -27,7 +27,7 @@
 		</div>
 		</p>
 </div>
-## range {#range .hide}
+## range {#range }
 <p class="mkapi-object mkapi-page-source" id=range>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">range</span>(
 	
@@ -55,7 +55,7 @@
 		</div>
 		</p>
 </div>
-## identity {#identity .hide}
+## identity {#identity }
 <p class="mkapi-object mkapi-page-source" id=identity>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">identity</span>(
 	
@@ -80,7 +80,7 @@
 		</div>
 		</p>
 </div>
-## compose {#compose .hide}
+## compose {#compose }
 <p class="mkapi-object mkapi-page-source" id=compose>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">compose</span>(
 	
@@ -105,7 +105,7 @@
 		</div>
 		</p>
 </div>
-## make_scale {#make_scale .hide}
+## make_scale {#make_scale }
 <p class="mkapi-object mkapi-page-source" id=make_scale>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">make_scale</span>(
 	
@@ -133,7 +133,7 @@
 		</div>
 		</p>
 </div>
-## serialize_force {#serialize_force .hide}
+## serialize_force {#serialize_force }
 <p class="mkapi-object mkapi-page-source" id=serialize_force>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">serialize_force</span>(
 	
@@ -164,7 +164,7 @@
 		</div>
 		</p>
 </div>
-## current_ns {#current_ns .hide}
+## current_ns {#current_ns }
 <p class="mkapi-object mkapi-page-source" id=current_ns>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">current_ns</span>(
 	
@@ -189,7 +189,7 @@
 		</div>
 		</p>
 </div>
-## default_ns {#default_ns .hide}
+## default_ns {#default_ns }
 <p class="mkapi-object mkapi-page-source" id=default_ns>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">default_ns</span>(
 	
@@ -214,7 +214,7 @@
 		</div>
 		</p>
 </div>
-## clean {#clean .hide}
+## clean {#clean }
 <p class="mkapi-object mkapi-page-source" id=clean>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">clean</span>(
 	
@@ -239,7 +239,7 @@
 		</div>
 		</p>
 </div>
-## apply_sim {#apply_sim .hide}
+## apply_sim {#apply_sim }
 <p class="mkapi-object mkapi-page-source" id=apply_sim>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">apply_sim</span>(
 	
@@ -267,7 +267,7 @@
 		</div>
 		</p>
 </div>
-## scale_nodes {#scale_nodes .hide}
+## scale_nodes {#scale_nodes }
 <p class="mkapi-object mkapi-page-source" id=scale_nodes>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">scale_nodes</span>(
 	
@@ -298,7 +298,7 @@
 		</div>
 		</p>
 </div>
-## register_ticker {#register_ticker .hide}
+## register_ticker {#register_ticker }
 <p class="mkapi-object mkapi-page-source" id=register_ticker>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">register_ticker</span>(
 	
@@ -326,7 +326,7 @@
 		</div>
 		</p>
 </div>
-## clear_stage {#clear_stage .hide}
+## clear_stage {#clear_stage }
 <p class="mkapi-object mkapi-page-source" id=clear_stage>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">clear_stage</span>(
 	
@@ -349,7 +349,7 @@
 		</div>
 		</p>
 </div>
-## generate_node_graphics {#generate_node_graphics .hide}
+## generate_node_graphics {#generate_node_graphics }
 <p class="mkapi-object mkapi-page-source" id=generate_node_graphics>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">generate_node_graphics</span>(
 	
@@ -374,7 +374,7 @@
 		</div>
 		</p>
 </div>
-## generate_links_graphic {#generate_links_graphic .hide}
+## generate_links_graphic {#generate_links_graphic }
 <p class="mkapi-object mkapi-page-source" id=generate_links_graphic>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">generate_links_graphic</span>(
 )
@@ -384,7 +384,7 @@
 <div class="mkapi-document"> 
 	<p>Creates a PIXI Graphics object for rendering network links</p>
 </div>
-## generate_links_graphics {#generate_links_graphics .hide}
+## generate_links_graphics {#generate_links_graphics }
 <p class="mkapi-object mkapi-page-source" id=generate_links_graphics>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">generate_links_graphics</span>(
 	
@@ -409,7 +409,7 @@
 		</div>
 		</p>
 </div>
-## generate_polygon_graphics {#generate_polygon_graphics .hide}
+## generate_polygon_graphics {#generate_polygon_graphics }
 <p class="mkapi-object mkapi-page-source" id=generate_polygon_graphics>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">generate_polygon_graphics</span>(
 	
@@ -434,7 +434,7 @@
 		</div>
 		</p>
 </div>
-## build_nodes {#build_nodes .hide}
+## build_nodes {#build_nodes }
 <p class="mkapi-object mkapi-page-source" id=build_nodes>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">build_nodes</span>(
 	
@@ -460,7 +460,7 @@
 		</div>
 		</p>
 </div>
-## build_links {#build_links .hide}
+## build_links {#build_links }
 <p class="mkapi-object mkapi-page-source" id=build_links>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">build_links</span>(
 	
@@ -489,7 +489,7 @@
 		</div>
 		</p>
 </div>
-## build_polygon {#build_polygon .hide}
+## build_polygon {#build_polygon }
 <p class="mkapi-object mkapi-page-source" id=build_polygon>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">build_polygon</span>(
 	
@@ -518,7 +518,7 @@
 		</div>
 		</p>
 </div>
-## build_polygons {#build_polygons .hide}
+## build_polygons {#build_polygons }
 <p class="mkapi-object mkapi-page-source" id=build_polygons>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">build_polygons</span>(
 	
@@ -544,7 +544,7 @@
 		</div>
 		</p>
 </div>
-## register_tick_stops {#register_tick_stops .hide}
+## register_tick_stops {#register_tick_stops }
 <p class="mkapi-object mkapi-page-source" id=register_tick_stops>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">register_tick_stops</span>(
 	
@@ -573,7 +573,7 @@
 		</div>
 		</p>
 </div>
-## enable_interactive {#enable_interactive .hide}
+## enable_interactive {#enable_interactive }
 <p class="mkapi-object mkapi-page-source" id=enable_interactive>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">enable_interactive</span>(
 	
@@ -599,7 +599,7 @@
 		</div>
 		</p>
 </div>
-## disable_interactive {#disable_interactive .hide}
+## disable_interactive {#disable_interactive }
 <p class="mkapi-object mkapi-page-source" id=disable_interactive>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">disable_interactive</span>(
 	
@@ -625,7 +625,7 @@
 		</div>
 		</p>
 </div>
-## drag_dispatcher {#drag_dispatcher .hide}
+## drag_dispatcher {#drag_dispatcher }
 <p class="mkapi-object mkapi-page-source" id=drag_dispatcher>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">drag_dispatcher</span>(
 	
@@ -650,7 +650,7 @@
 		</div>
 		</p>
 </div>
-## pixi_drag {#pixi_drag .hide}
+## pixi_drag {#pixi_drag }
 <p class="mkapi-object mkapi-page-source" id=pixi_drag>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">pixi_drag</span>(
 	
@@ -675,7 +675,7 @@
 		</div>
 		</p>
 </div>
-## force_drag {#force_drag .hide}
+## force_drag {#force_drag }
 <p class="mkapi-object mkapi-page-source" id=force_drag>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">force_drag</span>(
 	
@@ -700,7 +700,7 @@
 		</div>
 		</p>
 </div>
-## add_items {#add_items .hide}
+## add_items {#add_items }
 <p class="mkapi-object mkapi-page-source" id=add_items>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">add_items</span>(
 	
@@ -729,7 +729,7 @@
 		</div>
 		</p>
 </div>
-## insert_nodes {#insert_nodes .hide}
+## insert_nodes {#insert_nodes }
 <p class="mkapi-object mkapi-page-source" id=insert_nodes>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">insert_nodes</span>(
 	
@@ -757,7 +757,7 @@
 		</div>
 		</p>
 </div>
-## remove_nodes {#remove_nodes .hide}
+## remove_nodes {#remove_nodes }
 <p class="mkapi-object mkapi-page-source" id=remove_nodes>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">remove_nodes</span>(
 	
@@ -789,7 +789,7 @@
 		</div>
 		</p>
 </div>
-## make_group {#make_group .hide}
+## make_group {#make_group }
 <p class="mkapi-object mkapi-page-source" id=make_group>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">make_group</span>(
 	
@@ -814,7 +814,7 @@
 		</div>
 		</p>
 </div>
-## force_sim {#force_sim .hide}
+## force_sim {#force_sim }
 <p class="mkapi-object mkapi-page-source" id=force_sim>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">force_sim</span>(
 )
@@ -824,7 +824,7 @@
 <div class="mkapi-document"> 
 	<p>Creates a new D3 force simulation instance</p>
 </div>
-## enable_resize {#enable_resize .hide}
+## enable_resize {#enable_resize }
 <p class="mkapi-object mkapi-page-source" id=enable_resize>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">enable_resize</span>(
 	
@@ -852,7 +852,7 @@
 		</div>
 		</p>
 </div>
-## resolve_links {#resolve_links .hide}
+## resolve_links {#resolve_links }
 <p class="mkapi-object mkapi-page-source" id=resolve_links>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">resolve_links</span>(
 	
@@ -878,7 +878,7 @@
 		</div>
 		</p>
 </div>
-## enable_lasso {#enable_lasso .hide}
+## enable_lasso {#enable_lasso }
 <p class="mkapi-object mkapi-page-source" id=enable_lasso>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">enable_lasso</span>(
 	
@@ -903,7 +903,7 @@
 		</div>
 		</p>
 </div>
-## _init_application {#_init_application .hide}
+## _init_application {#_init_application }
 <p class="mkapi-object mkapi-page-source" id=_init_application>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">_init_application</span>(
 	
@@ -961,7 +961,7 @@
 		</div>
 		</p>
 </div>
-## _init_viewport {#_init_viewport .hide}
+## _init_viewport {#_init_viewport }
 <p class="mkapi-object mkapi-page-source" id=_init_viewport>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">_init_viewport</span>(
 )
@@ -972,7 +972,7 @@
 	<p>Creates and configures a viewport for handling pan, zoom, and drag interactions
 Uses pixi-viewport library for managing world-to-screen coordinate transformations</p>
 </div>
-## _init_ticker {#_init_ticker .hide}
+## _init_ticker {#_init_ticker }
 <p class="mkapi-object mkapi-page-source" id=_init_ticker>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">_init_ticker</span>(
 )
@@ -981,7 +981,7 @@ Uses pixi-viewport library for managing world-to-screen coordinate transformatio
 	<p>Initializes the PixiJS ticker and D3 event dispatcher for animation and event handling
 Registers the ticker with the application and viewport for synchronized updates</p>
 </div>
-## _init_graphics {#_init_graphics .hide}
+## _init_graphics {#_init_graphics }
 <p class="mkapi-object mkapi-page-source" id=_init_graphics>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">_init_graphics</span>(
 	
@@ -1010,7 +1010,7 @@ Scales node coordinates to fit viewport dimensions and resolves link source/targ
 		</div>
 		</p>
 </div>
-## _init_force {#_init_force .hide}
+## _init_force {#_init_force }
 <p class="mkapi-object mkapi-page-source" id=_init_force>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">_init_force</span>(
 	
@@ -1034,7 +1034,7 @@ Creates a stopped simulation with alpha set to 1.0 for manual control</p>
 		</div>
 		</p>
 </div>
-## enable_drag {#enable_drag .hide}
+## enable_drag {#enable_drag }
 <p class="mkapi-object mkapi-page-source" id=enable_drag>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">enable_drag</span>(
 )
@@ -1045,7 +1045,7 @@ Creates a stopped simulation with alpha set to 1.0 for manual control</p>
 	<p>Enables drag interaction for all node graphics in the visualization
 Implements pointer-based dragging with viewport pause/resume and force simulation integration</p>
 </div>
-## disable_drag {#disable_drag .hide}
+## disable_drag {#disable_drag }
 <p class="mkapi-object mkapi-page-source" id=disable_drag>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">disable_drag</span>(
 )
@@ -1054,7 +1054,7 @@ Implements pointer-based dragging with viewport pause/resume and force simulatio
 	<p>Disables drag interaction for all node graphics
 Sets interactive property to false for all nodes</p>
 </div>
-## enable_force {#enable_force .hide}
+## enable_force {#enable_force }
 <p class="mkapi-object mkapi-page-source" id=enable_force>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">enable_force</span>(
 )
@@ -1062,7 +1062,7 @@ Sets interactive property to false for all nodes</p>
 <div class="mkapi-document"> 
 	<p>Enables force simulation by connecting the dispatcher tick event to simulation updates</p>
 </div>
-## disable_force {#disable_force .hide}
+## disable_force {#disable_force }
 <p class="mkapi-object mkapi-page-source" id=disable_force>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">disable_force</span>(
 )
@@ -1070,7 +1070,7 @@ Sets interactive property to false for all nodes</p>
 <div class="mkapi-document"> 
 	<p>Disables force simulation by removing the tick event handler</p>
 </div>
-## center_graph {#center_graph .hide}
+## center_graph {#center_graph }
 <p class="mkapi-object mkapi-page-source" id=center_graph>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">center_graph</span>(
 	
@@ -1100,7 +1100,7 @@ Optionally fits the graph to the viewport bounds and updates force simulation ce
 		</div>
 		</p>
 </div>
-## force_center {#force_center .hide}
+## force_center {#force_center }
 <p class="mkapi-object mkapi-page-source" id=force_center>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">force_center</span>(
 	
@@ -1129,7 +1129,7 @@ Optionally fits the graph to the viewport bounds and updates force simulation ce
 		</div>
 		</p>
 </div>
-## force_link {#force_link .hide}
+## force_link {#force_link }
 <p class="mkapi-object mkapi-page-source" id=force_link>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">force_link</span>(
 	
@@ -1161,7 +1161,7 @@ Optionally fits the graph to the viewport bounds and updates force simulation ce
 		</div>
 		</p>
 </div>
-## force_manybody {#force_manybody .hide}
+## force_manybody {#force_manybody }
 <p class="mkapi-object mkapi-page-source" id=force_manybody>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">force_manybody</span>(
 	
@@ -1196,7 +1196,7 @@ Optionally fits the graph to the viewport bounds and updates force simulation ce
 		</div>
 		</p>
 </div>
-## apply_force {#apply_force .hide}
+## apply_force {#apply_force }
 <p class="mkapi-object mkapi-page-source" id=apply_force>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">apply_force</span>(
 	
@@ -1231,7 +1231,7 @@ Parses force settings object and applies appropriate force types with their para
 		</div>
 		</p>
 </div>
-## init {#init .hide}
+## init {#init }
 <p class="mkapi-object mkapi-page-source" id=init>
 <span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">init</span>(
 	
@@ -1257,9 +1257,35 @@ Parses force settings object and applies appropriate force types with their para
 		</div>
 		</p>
 </div>
+## init_all {#init_all }
+<p class="mkapi-object mkapi-page-source" id=init_all>
+<span class="mkapi-object-kind">function</span> <span class="mkapi-object-name">init_all</span>(
+	
+	<span class="mkapi-arg">drag</span>: <span class="mkapi-ann">boolean</span>
+, 
+	<span class="mkapi-arg">center</span>: <span class="mkapi-ann">boolean</span>
+	)
+	</p>
+<div class="mkapi-document"> 
+	<p>Initializes the visualization with PIXI application, viewport, and force simulation</p>
+		<p class="mkapi-section"> 
+		<span class="mkapi-object-link">
+			<span class="mkapi-section-toggle" title="Toggle methods">
+				<i class="fa-regular fa-square-minus"></i>
+			</span>
+		</span>
+		<span class="mkapi-section-name">Parameters:</span>
+		<div class="mkapi-section-content">
+		<ul class="mkapi-item-list">
+			<li> <span class="mkapi-item-name mkapi-arg">drag</span> <span class="mkapi-dash">—</span> Whether to enable node dragging </li>
+			<li> <span class="mkapi-item-name mkapi-arg">center</span> <span class="mkapi-dash">—</span> Whether to center the graph initially </li>
+		</ul>
+		</div>
+		</p>
+</div>
 
 
-## Pixiplex {#Pixiplex .hide}
+## Pixiplex {#Pixiplex }
 <p class="mkapi-object mkapi-page-source" id=Pixiplex>
 <span class="mkapi-object-kind">class</span> <span class="mkapi-object-name">Pixiplex</span>(
 )
@@ -1267,7 +1293,6 @@ Parses force settings object and applies appropriate force types with their para
 <div class="mkapi-document"> 
 	<p>Creates a new Pixiplex network visualization instance</p>
 </div>
-
 
 
 

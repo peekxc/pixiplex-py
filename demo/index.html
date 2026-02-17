@@ -48,6 +48,7 @@
                 <button id="reheat_button" type="button" class="rounded-lg bg-cyan-700 px-3 py-2 text-left text-sm font-medium text-white transition hover:translate-x-0.5 hover:bg-cyan-600">Reheat simulation</button>
                 <button id="pulse_charge_button" type="button" class="rounded-lg bg-cyan-700 px-3 py-2 text-left text-sm font-medium text-white transition hover:translate-x-0.5 hover:bg-cyan-600">Pulse repulsion</button>
                 <button id="toggle_performance_mode" type="button" class="rounded-lg bg-cyan-700 px-3 py-2 text-left text-sm font-medium text-white transition hover:translate-x-0.5 hover:bg-cyan-600">Performance mode: off</button>
+                <button id="toggle_render_mode" type="button" class="rounded-lg bg-slate-700 px-3 py-2 text-left text-sm font-medium text-white transition hover:translate-x-0.5 hover:bg-slate-600">Render mode: --</button>
               </div>
             </section>
 
@@ -121,7 +122,7 @@
 
         <section class="flex min-h-[50vh] flex-col gap-3 rounded-2xl border border-white/70 bg-white/80 p-2 shadow-[0_14px_40px_rgba(15,23,42,0.12)] backdrop-blur">
           <div class="relative min-h-[420px] flex-1">
-            <div class="absolute left-4 top-4 z-10 rounded-full bg-slate-900/80 px-3 py-1 text-xs text-slate-200 [font-family:'IBM_Plex_Mono',monospace]">canvas: pixiplex</div>
+            <div id="render_mode_badge" class="absolute left-4 top-4 z-10 rounded-full bg-slate-900/80 px-3 py-1 text-xs text-slate-200 [font-family:'IBM_Plex_Mono',monospace]">canvas: pixiplex</div>
             <div id="perf_hud" class="pointer-events-none absolute right-4 top-4 z-10 rounded-lg bg-slate-900/85 px-3 py-2 text-[11px] leading-5 text-cyan-200 [font-family:'IBM_Plex_Mono',monospace]">
               <div>fps: --</div>
               <div>frame ms: --</div>

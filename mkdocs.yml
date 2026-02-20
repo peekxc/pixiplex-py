@@ -14,15 +14,20 @@ nav:
   - Reference: 
     - PY API: $api/pixiplex.pixinet 
     - JS API:
-      - Core (pixinet.js): api/pixinet.md
-      - Renderers:
-        - Index: api/renderers/index.md
-        - Runtime: api/renderers/runtime.md
-        - Individual: api/renderers/individual.md
-        - Grouped: api/renderers/grouped.md
-        - Mesh: api/renderers/mesh.md
-        - WebGL: api/renderers/webgl.md
-        - Types: api/renderers/types.md
+      - pixinet.js: api/js/pixinet.md
+      - widget.js: api/js/widget.md
+      - core:
+        - utils.js: api/js/core/utils.md
+        - graph.js: api/js/core/graph.md
+        - styles.js: api/js/core/styles.md
+        - simulation.js: api/js/core/simulation.md
+        - viewport.js: api/js/core/viewport.md
+      - renderers:
+        - runtime.js: api/js/renderers/runtime.md
+        - individual.js: api/js/renderers/individual.md
+        - grouped.js: api/js/renderers/grouped.md
+        - mesh.js: api/js/renderers/mesh.md
+        - webgl.js: api/js/renderers/webgl.md
 
 theme:
   name: material

@@ -2,16 +2,15 @@
 	"scripts": {
 		"dev": "vite demo --config demo/vite.config.js",
 		"build": "bun run build:widget && bun run build:pixinet && bun run build:demo && bun run build:css",
-		"docs:api": "npm run docs:api:node",
-		"docs:api:node": "mkdir -p docs/api/renderers && node ./node_modules/jsdoc-to-markdown/bin/cli.js --template templates/sig-style.hbs --files src/pixiplex/pixinet.js > docs/api/pixinet.md && node ./node_modules/jsdoc-to-markdown/bin/cli.js --template templates/sig-style.hbs --files src/pixiplex/renderers.js > docs/api/renderers/index.md && node ./node_modules/jsdoc-to-markdown/bin/cli.js --template templates/sig-style.hbs --files src/pixiplex/renderers/pixiplex_renderer_runtime.js > docs/api/renderers/runtime.md && node ./node_modules/jsdoc-to-markdown/bin/cli.js --template templates/sig-style.hbs --files src/pixiplex/renderers/pixiplex_individual.js > docs/api/renderers/individual.md && node ./node_modules/jsdoc-to-markdown/bin/cli.js --template templates/sig-style.hbs --files src/pixiplex/renderers/pixiplex_grouped.js > docs/api/renderers/grouped.md && node ./node_modules/jsdoc-to-markdown/bin/cli.js --template templates/sig-style.hbs --files src/pixiplex/renderers/pixiplex_mesh.js > docs/api/renderers/mesh.md && node ./node_modules/jsdoc-to-markdown/bin/cli.js --template templates/sig-style.hbs --files src/pixiplex/renderers/pixiplex_webgl.js > docs/api/renderers/webgl.md && node scripts/generate-renderer-types-doc.mjs",
-		"docs:build": "npm run docs:api && mkdocs build --clean",
+		"docs:api": "node scripts/generate-js-api-docs.mjs",
+		"docs:api:node": "node scripts/generate-js-api-docs.mjs",
+		"docs:build": "node scripts/generate-js-api-docs.mjs && mkdocs build --clean",
 		"build:widget": "vite build --config vite.widget.config.js",
 		"build:pixinet": "vite build --config vite.pixinet.config.js",
 		"build:demo": "vite build demo --config demo/vite.config.js",
-		"build:css": "cp src/pixiplex/widget.css src/pixiplex/static/widget.css",
 		"preview": "vite preview demo --config demo/vite.config.js",
-		"test:js": "vitest run",
-		"bench:js": "vitest bench --run"
+		"test": "vitest run",
+		"bench": "vitest bench --run"
 	},
 	"dependencies": {
 		"": ".",
@@ -28,6 +27,7 @@
 		"lodash-es": "^4.17.21",
 		"pixi-viewport": "^6.0.3",
 		"pixi.js": "^8.6.6",
+		"pnpm": "^10.30.0",
 		"pyodide": "^0.27.2"
 	},
 	"devDependencies": {

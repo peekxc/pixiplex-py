@@ -7,7 +7,7 @@ export default defineConfig({
     emptyOutDir: false,
     sourcemap: false,
     lib: {
-      entry: resolve(__dirname, "src/pixiplex/pixinet.js"),
+      entry: resolve(__dirname, "src/pixiplex/javascript/pixinet.js"),
       formats: ["es"],
       fileName: () => "pixinet.js",
     },

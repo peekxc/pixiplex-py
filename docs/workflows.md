@@ -99,18 +99,11 @@ Because `pixiplex` is a library that spans both Python and JavaScript, it requir
 
 	`docs:api` generates:
 
-	- `docs/api/pixinet.md`
-	- `docs/api/renderers/index.md`
-	- `docs/api/renderers/runtime.md`
-	- `docs/api/renderers/individual.md`
-	- `docs/api/renderers/grouped.md`
-	- `docs/api/renderers/mesh.md`
-	- `docs/api/renderers/webgl.md`
-	- `docs/api/renderers/types.md`
+	- markdown pages that mirror `src/pixiplex/javascript/**` under `docs/api/js/**`
 
 	!!! note
-		Use `npm run docs:api` rather than `bun run docs:api` for now.
-		The `jsdoc` toolchain invoked by `jsdoc-to-markdown` is currently unstable under Bun runtime execution.
+		Run docs generation with `npm run` so the `jsdoc-to-markdown` toolchain executes under Node.
+		`bun run docs:api` is currently unreliable in this repository.
 
 
 === "Bundle Analyzer"

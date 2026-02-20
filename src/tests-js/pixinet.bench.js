@@ -1,6 +1,7 @@
 import { bench, describe } from "vitest";
 
-import { combinations, d3_force, serialize_force } from "../pixiplex/pixinet.js";
+import { combinations, serialize_force } from "../pixiplex/javascript/pixinet.js";
+import * as d3_force from "d3-force";
 
 describe("pixinet benchmarks", () => {
   bench("combinations(120,2)", () => {

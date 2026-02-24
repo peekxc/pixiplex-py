@@ -2,20 +2,57 @@
 
 from __future__ import annotations
 
+import json
 import pathlib
-from typing import Optional
+from typing import Any, Optional
 
-import anywidget
 import traitlets
 from numpy.typing import ArrayLike
 
 from .forces import ForceConfig
-from .styles import NodeStyle
+from .styles import EdgeStyle, NodeStyle
+
+try:
+    import anywidget
+except (
+    ModuleNotFoundError
+):  # pragma: no cover - fallback for non-widget test environments
+    anywidget = None
+
+
+class _FallbackAnyWidget(traitlets.HasTraits):
+    def send(self, _msg: dict[str, Any]) -> None:
+        return None
+
+
+AnyWidgetBase = anywidget.AnyWidget if anywidget is not None else _FallbackAnyWidget
 
 OUTPUT_DIR = pathlib.Path(__file__).resolve().parent.parent / "static"
 
 
-class Pixinet(anywidget.AnyWidget):
+def _normalize_nodes_links(
+    nodes: Optional[list[dict[str, Any]]],
+    links: Optional[list[dict[str, Any]]],
+    node_ids: Optional[ArrayLike],
+    edgelist: Optional[ArrayLike],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    if nodes is not None or links is not None:
+        return list(nodes or []), list(links or [])
+
+    normalized_nodes = [
+        {"id": int(node_id)}
+        for node_id in (list(node_ids) if node_ids is not None else [])
+    ]
+    if edgelist is None:
+        return normalized_nodes, []
+
+    normalized_links = [
+        {"source": int(edge[0]), "target": int(edge[1])} for edge in list(edgelist)
+    ]
+    return normalized_nodes, normalized_links
+
+
+class Pixinet(AnyWidgetBase):
     """Python host for the Pixi/d3 force-directed graph widget."""
 
     _esm = OUTPUT_DIR / "widget.js"
@@ -25,39 +62,42 @@ class Pixinet(anywidget.AnyWidget):
     width = traitlets.Int(250).tag(sync=True)
     height = traitlets.Int(250).tag(sync=True)
 
-    node_ids = traitlets.List(trait=traitlets.CInt).tag(sync=True)
-    src_ids = traitlets.List(trait=traitlets.CInt).tag(sync=True)
-    tgt_ids = traitlets.List(trait=traitlets.CInt).tag(sync=True)
+    nodes = traitlets.List(trait=traitlets.Dict()).tag(sync=True)
+    links = traitlets.List(trait=traitlets.Dict()).tag(sync=True)
 
-    _x = traitlets.List(trait=traitlets.Float).tag(sync=True)
-    _y = traitlets.List(trait=traitlets.Float).tag(sync=True)
-
-    node_color = traitlets.List(trait=traitlets.Unicode, default_value=[]).tag(
-        sync=True
-    )
-    node_radii = traitlets.List(trait=traitlets.Float, default_value=[]).tag(sync=True)
-    node_value = traitlets.Int(0).tag(sync=True)
+    _x = traitlets.List(trait=traitlets.Float()).tag(sync=True)
+    _y = traitlets.List(trait=traitlets.Float()).tag(sync=True)
 
     node_style = traitlets.Instance(NodeStyle).tag(sync=True, to_json=NodeStyle.as_dict)
+    line_style = traitlets.Instance(EdgeStyle).tag(sync=True, to_json=EdgeStyle.as_dict)
     forces = traitlets.Instance(ForceConfig).tag(sync=True, to_json=ForceConfig.as_dict)
 
     def __init__(
         self,
-        node_ids: ArrayLike,
-        edgelist: ArrayLike,
+        node_ids: Optional[ArrayLike] = None,
+        edgelist: Optional[ArrayLike] = None,
+        *,
+        nodes: Optional[list[dict[str, Any]]] = None,
+        links: Optional[list[dict[str, Any]]] = None,
         width: int = 250,
         height: int = 250,
+        scale: float = 2.0,
         forces: Optional[ForceConfig] = None,
+        node_style: Optional[NodeStyle] = None,
+        line_style: Optional[EdgeStyle] = None,
     ) -> None:
+        super().__init__()
+        normalized_nodes, normalized_links = _normalize_nodes_links(
+            nodes=nodes, links=links, node_ids=node_ids, edgelist=edgelist
+        )
         self.width = width
         self.height = height
-        self.node_ids = list(node_ids)
-        self.node_radii = [5.0] * len(node_ids)
-        self.src_ids = list(edgelist[:, 0])
-        self.tgt_ids = list(edgelist[:, 1])
+        self.scale = scale
+        self.nodes = normalized_nodes
+        self.links = normalized_links
         self.forces = ForceConfig() if forces is None else forces
-        self.node_style = NodeStyle()
-        super().__init__()
+        self.node_style = NodeStyle() if node_style is None else node_style
+        self.line_style = EdgeStyle() if line_style is None else line_style
 
     def center(
         self, fit_zoom: bool = False, x: float | None = None, y: float | None = None
@@ -77,6 +117,10 @@ class Pixinet(anywidget.AnyWidget):
         self.send({"type": "msg:sync_node_coordinates"})
         return self._y
 
+    @property
+    def graph(self) -> dict[str, list[dict[str, Any]]]:
+        return {"nodes": list(self.nodes), "links": list(self.links)}
+
     def embed_html(self, path: pathlib.Path):
         import ipywidgets.embed
 
@@ -89,27 +133,66 @@ class Pixinet(anywidget.AnyWidget):
 
         return embed_data(self)
 
-    def embed_raw(self, path: pathlib.Path | str):
-        import json
-
+    def to_standalone_html(
+        self,
+        path: pathlib.Path | str,
+        *,
+        inline_js: bool = True,
+        title: str = "Pixiplex Export",
+    ) -> pathlib.Path:
         path = pathlib.Path(path)
-        graph = {}
-        graph["nodes"] = [{"id": i} for i in self.node_ids]
-        graph["links"] = [
-            {"source": i, "target": j} for i, j in zip(self.src_ids, self.tgt_ids)
-        ]
-        html_template = f"""
-		<div id="pixiplex_container" style="position: relative; overflow: hidden; overflow-y: hidden; padding: 0; margin: 5px; border: 1px solid black; "></div>
-		<script type="module">
-		import * as pn from "./pixinet.js"
-		const WORLD_WIDTH = 1000;
-		const WORLD_HEIGHT = 1000;
-		console.log("Pixel ratio: " + devicePixelRatio);
-		const graph = {json.dumps(graph)};
-		const pp = new pn.Pixiplex(graph.nodes, graph.links, 400, 400, 2.0);
-		window.pp = pp;
-		await pp.init();
-		document.getElementById("pixiplex_container").appendChild(pp.view);
-		</script>
-		"""
-        path.write_text(html_template)
+        pixinet_js = (OUTPUT_DIR / "pixinet.js").read_text()
+        graph_json = json.dumps(self.graph)
+        forces_json = json.dumps(ForceConfig.as_dict(self.forces, widget=self))
+        node_style_json = json.dumps(NodeStyle.as_dict(self.node_style, widget=self))
+        line_style_json = json.dumps(EdgeStyle.as_dict(self.line_style, widget=self))
+
+        if inline_js:
+            module_block = f"""
+<script type=\"module\">
+{pixinet_js}
+const graph = {graph_json};
+const pp = new Pixiplex(graph.nodes, graph.links, {self.width}, {self.height}, {self.scale}, {forces_json});
+pp.node_style = {node_style_json};
+pp.line_style = {line_style_json};
+await pp.init_all();
+document.getElementById("pixiplex_container").appendChild(pp.view);
+window.pp = pp;
+</script>
+"""
+        else:
+            module_block = f"""
+<script type=\"module\">
+import {{ Pixiplex }} from "./pixinet.js";
+const graph = {graph_json};
+const pp = new Pixiplex(graph.nodes, graph.links, {self.width}, {self.height}, {self.scale}, {forces_json});
+pp.node_style = {node_style_json};
+pp.line_style = {line_style_json};
+await pp.init_all();
+document.getElementById("pixiplex_container").appendChild(pp.view);
+window.pp = pp;
+</script>
+"""
+
+        html = f"""<!doctype html>
+<html lang=\"en\">
+<head>
+  <meta charset=\"utf-8\" />
+  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
+  <title>{title}</title>
+  <style>
+    html, body {{ margin: 0; padding: 0; }}
+    #pixiplex_container {{ width: {self.width}px; height: {self.height}px; overflow: hidden; }}
+  </style>
+</head>
+<body>
+  <div id=\"pixiplex_container\"></div>
+  {module_block}
+</body>
+</html>
+"""
+        path.write_text(html)
+        return path
+
+    def embed_raw(self, path: pathlib.Path | str):
+        return self.to_standalone_html(path)

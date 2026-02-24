@@ -118,318 +118,65 @@ const graphApiResult = document.getElementById("graph_api_result");
 const graphApiLast = document.getElementById("graph_api_last");
 const graphApiResetCommandButton = document.getElementById("graph_api_reset_command");
 
-const default_graph_command = `pp.graph().replace({\n  nodes: [\n    { id: 101, group: "a", score: 0.95 },\n    { id: 102, group: "b", score: 0.55 },\n    { id: 103, group: "a", score: 0.25 }\n  ],\n  links: [\n    { source: 101, target: 102, weight: 0.8 },\n    { source: 102, target: 103, weight: 0.4 },\n    { source: 101, target: 103, weight: 0.9 }\n  ]\n}).nodes().where((n) => n.group === "a").count()`;
+const graph_namespace_chains = [
+  "pp.graph().count()",
+  "pp.graph().nodes().count()",
+  "pp.graph().nodes().ids().slice(0, 10)",
+  "pp.graph().nodes().where((n) => n.group === 1).count()",
+  "pp.graph().neighbors([1], 1).count()",
+  "pp.graph().nodes([1]).neighbors(2).count()",
+  "pp.graph().nodes([1]).neighbors(2, { shell: true }).count()",
+  "pp.graph().nodes([1]).any_path_to(10).ids()",
+  "pp.graph().nodes([1]).shortest_path_to(10).ids()",
+  "pp.graph().nodes([1, 2]).components().count()",
+  "pp.graph().nodes([1, 2]).components({ mode: \"list\" }).map((sel) => sel.count())",
+  "pp.graph().subgraph({ groups: [1] }).count()",
+  "pp.graph().nodes().where((n) => n.id % 2 === 0).attr({ even: true }).count()",
+  "pp.graph().nodes().where((n) => n.group === 1).to_array().length",
+  "pp.graph().nodes().where((n) => n.group === 1).to_object().nodes.length",
+  "pp.graph().edges().where((e) => Number(e.weight || 0) > 1).attr({ heavy: true }).count()",
+  "pp.graph().nodes([1]).edges().where((e) => Number(e.weight || 0) > 0).nodes().count()",
+  "pp.graph().edges().where((e) => Number(e.weight || 0) > 1).to_array().length",
+  "pp.graph().edges().where((e) => Number(e.weight || 0) > 1).to_object().links.length",
+  "pp.graph().nodes([1, 2]).boundary().count()",
+  "pp.graph().nodes([1, 2]).cut(pp.graph().nodes([3, 4])).count()",
+  'pp.graph().merge({ nodes: [{ id: "temp-node" }], links: [] }).count()',
+  'pp.graph().nodes(["temp-node"]).remove().count()',
+  "pp.graph().clear().count()",
+];
+
+const default_graph_command = graph_namespace_chains[0];
 
 const graph_namespace_methods = [
   "nodes",
   "edges",
   "where",
   "k_hop",
+  "neighbors",
+  "boundary",
+  "cut",
+  "any_path_to",
+  "shortest_path_to",
+  "components",
+  "subgraph",
   "style",
   "attr",
   "remove",
-  "set",
-  "use",
-  "clear_sets",
   "replace",
   "merge",
-  "validate",
+  "clear",
   "normalize",
-  "neighbors",
-  "path_between",
-  "connected_component",
-  "subgraph",
+  "validate",
   "reindex",
   "ids",
   "count",
+  "to_array",
+  "to_object",
   "value",
   "print",
-  "composability",
-];
-
-const shared_graph_update_options = [
-  "clone?: boolean = true (deep-clone payload before apply)",
-  "center?: boolean = true (recenters and fits after apply)",
-  "drag?: boolean = false (enables drag after apply)",
 ];
 
 const graph_namespace_docs = {
-  set: {
-    signature: "set(data = {}, options = {})",
-    summary: "Replace the full graph using `{ nodes, links }`.",
-    args: ["data.nodes: node array", "data.links: link array"],
-    options: [
-      ...shared_graph_update_options,
-    ],
-    returns: "fluent graph namespace",
-  },
-  patch: {
-    signature: "patch(delta = {}, options = {})",
-    summary: "Apply incremental graph updates.",
-    args: ["delta: { add_nodes, remove_node_ids, add_links, remove_links }"],
-    options: [...shared_graph_update_options],
-    returns: "fluent graph namespace",
-  },
-  clear: {
-    signature: "clear(options = {})",
-    summary: "Remove all nodes and links.",
-    args: [],
-    options: [...shared_graph_update_options],
-    returns: "fluent graph namespace",
-  },
-  replace_nodes: {
-    signature: "replace_nodes(nodes = [], options = {})",
-    summary: "Replace node list and drop invalid links.",
-    args: ["nodes: replacement node array"],
-    options: [...shared_graph_update_options],
-    returns: "fluent graph namespace",
-  },
-  replace_links: {
-    signature: "replace_links(links = [], options = {})",
-    summary: "Replace links while preserving current nodes.",
-    args: ["links: replacement link array"],
-    options: [...shared_graph_update_options],
-    returns: "fluent graph namespace",
-  },
-  add_nodes: {
-    signature: "add_nodes(nodes = [], options = {})",
-    summary: "Add/update nodes by id.",
-    args: ["nodes: nodes to merge by id (last write wins)"],
-    options: [...shared_graph_update_options],
-    returns: "fluent graph namespace",
-  },
-  update_nodes: {
-    signature: "update_nodes(patches = [], options = {})",
-    summary: "Patch existing nodes by id.",
-    args: ["patches: partial node objects with required id"],
-    options: [...shared_graph_update_options],
-    returns: "fluent graph namespace",
-  },
-  remove_nodes: {
-    signature: "remove_nodes(node_ids = [], options = {})",
-    summary: "Remove nodes and incident links.",
-    args: ["node_ids: ids to delete"],
-    options: [...shared_graph_update_options],
-    returns: "fluent graph namespace",
-  },
-  add_links: {
-    signature: "add_links(links = [], options = {})",
-    summary: "Append links, canonicalize, dedupe, and validate endpoints.",
-    args: ["links: links to append"],
-    options: [...shared_graph_update_options],
-    returns: "fluent graph namespace",
-  },
-  update_links: {
-    signature: "update_links(patches = [], options = {})",
-    summary: "Patch links by source/target key.",
-    args: ["patches: link patches keyed by source::target"],
-    options: [...shared_graph_update_options],
-    returns: "fluent graph namespace",
-  },
-  remove_links: {
-    signature: "remove_links(links = [], options = {})",
-    summary: "Remove links matching source/target keys.",
-    args: ["links: source/target selectors"],
-    options: [...shared_graph_update_options],
-    returns: "fluent graph namespace",
-  },
-  merge: {
-    signature: "merge(data = {}, options = {})",
-    summary: "Merge nodes and links into the graph with dedupe.",
-    args: ["data.nodes?: nodes to merge", "data.links?: links to append"],
-    options: [...shared_graph_update_options],
-    returns: "fluent graph namespace",
-  },
-  snapshot: {
-    signature: "snapshot(name = \"default\")",
-    summary: "Store a deep clone of current graph state.",
-    args: ["name: snapshot key"],
-    returns: "fluent graph namespace",
-  },
-  restore: {
-    signature: "restore(name = \"default\", options = {})",
-    summary: "Restore a previously stored snapshot.",
-    args: ["name: snapshot key"],
-    options: [...shared_graph_update_options],
-    returns: "fluent graph namespace",
-  },
-  validate: {
-    signature: "validate()",
-    summary: "Validate ids and link endpoint integrity.",
-    args: [],
-    returns: "{ ok: boolean, errors: string[] }",
-  },
-  normalize: {
-    signature: "normalize(options = {})",
-    summary: "Deduplicate nodes/links and remove invalid endpoints.",
-    args: [],
-    options: [
-      "center?: boolean = false (normalize preserves current viewport by default)",
-      "clone?: boolean = true (deep-clone payload before apply)",
-      "drag?: boolean = false (enable drag handlers after apply)",
-    ],
-    returns: "fluent graph namespace",
-  },
-  select_all: {
-    signature: "select_all()",
-    summary: "Reset selection to the entire graph.",
-    args: [],
-    returns: "fluent graph namespace",
-  },
-  select_nodes_by_ids: {
-    signature: "select_nodes_by_ids(node_ids, options = {})",
-    summary: "Select nodes by explicit ids.",
-    args: ["node_ids: id or id[]"],
-    options: ["combine?: replace | union | intersect | subtract = replace"],
-    returns: "fluent graph namespace",
-  },
-  select_nodes_by_attr: {
-    signature: "select_nodes_by_attr(key, matcher, options = {})",
-    summary: "Select nodes by attribute equality or matcher callback.",
-    args: ["key: attribute name", "matcher: value or (value,node)=>boolean"],
-    options: ["combine?: replace | union | intersect | subtract = replace"],
-    returns: "fluent graph namespace",
-  },
-  select_nodes_where: {
-    signature: "select_nodes_where(predicate, options = {})",
-    summary: "Select nodes by predicate.",
-    args: ["predicate: (node)=>boolean"],
-    options: ["combine?: replace | union | intersect | subtract = replace"],
-    returns: "fluent graph namespace",
-  },
-  select_links_by_attr: {
-    signature: "select_links_by_attr(key, matcher, options = {})",
-    summary: "Select links by attribute equality or matcher callback.",
-    args: ["key: attribute name", "matcher: value or (value,link)=>boolean"],
-    options: ["combine?: replace | union | intersect | subtract = replace"],
-    returns: "fluent graph namespace",
-  },
-  select_links_where: {
-    signature: "select_links_where(predicate, options = {})",
-    summary: "Select links by predicate.",
-    args: ["predicate: (link)=>boolean"],
-    options: ["combine?: replace | union | intersect | subtract = replace"],
-    returns: "fluent graph namespace",
-  },
-  select_neighbors: {
-    signature: "select_neighbors(seed_ids, k = 1, options = {})",
-    summary: "Select nodes within k hops from seed nodes.",
-    args: ["seed_ids: id or id[]", "k: hop distance"],
-    options: ["direction?: both | out | in = both", "include_seeds?: boolean = true", "combine?: replace | union | intersect | subtract = replace"],
-    returns: "fluent graph namespace",
-  },
-  select_path_between: {
-    signature: "select_path_between(source_id, target_id, options = {})",
-    summary: "Select nodes/links along a path between source and target.",
-    args: ["source_id: node id", "target_id: node id"],
-    options: ["weighted?: boolean = false", "weight_key?: string = \"weight\"", "combine?: replace | union | intersect | subtract = replace"],
-    returns: "fluent graph namespace",
-  },
-  select_connected_component: {
-    signature: "select_connected_component(seed_id, options = {})",
-    summary: "Select the connected component containing seed node.",
-    args: ["seed_id: node id"],
-    options: ["combine?: replace | union | intersect | subtract = replace"],
-    returns: "fluent graph namespace",
-  },
-  select_subgraph: {
-    signature: "select_subgraph(criteria = {}, options = {})",
-    summary: "Select by `{ node_ids }`, `{ groups }`, or `{ predicate }`.",
-    args: ["criteria.node_ids?: id[]", "criteria.groups?: group[]", "criteria.predicate?: (node)=>boolean"],
-    options: ["combine?: replace | union | intersect | subtract = replace"],
-    returns: "fluent graph namespace",
-  },
-  reindex: {
-    signature: "reindex(options = {})",
-    summary: "Renumber node ids and rewrite all link endpoints.",
-    args: [],
-    options: ["offset?: number = 0 (new id base)", ...shared_graph_update_options],
-    returns: "fluent graph namespace",
-  },
-  node_color: {
-    signature: "node_color(color, options = {})",
-    summary: "Set node color for current scope or full graph.",
-    args: ["color: number|string"],
-    options: ["scope?: \"scope\" | \"all\" = \"scope\""],
-    returns: "fluent graph namespace",
-  },
-  node_radius: {
-    signature: "node_radius(radius, options = {})",
-    summary: "Set node radius for current scope or full graph.",
-    args: ["radius: number"],
-    options: ["scope?: \"scope\" | \"all\" = \"scope\""],
-    returns: "fluent graph namespace",
-  },
-  edge_width: {
-    signature: "edge_width(line_width, options = {})",
-    summary: "Set edge width for current scope or full graph.",
-    args: ["line_width: number"],
-    options: ["scope?: \"scope\" | \"all\" = \"scope\""],
-    returns: "fluent graph namespace",
-  },
-  edge_color: {
-    signature: "edge_color(color, options = {})",
-    summary: "Set edge color for current scope or full graph.",
-    args: ["color: number|string"],
-    options: ["scope?: \"scope\" | \"all\" = \"scope\""],
-    returns: "fluent graph namespace",
-  },
-  ids: {
-    signature: "ids()",
-    summary: "Return scoped node ids.",
-    args: [],
-    returns: "(number|string)[]",
-  },
-  count: {
-    signature: "count()",
-    summary: "Return scoped node/link counts.",
-    args: [],
-    returns: "{ nodes: number, links: number }",
-  },
-  value: {
-    signature: "value()",
-    summary: "Return deep-cloned scoped graph payload.",
-    args: [],
-    returns: "{ nodes: object[], links: object[] }",
-  },
-  print: {
-    signature: "print(options = {})",
-    summary: "Log and return scoped or full graph payload.",
-    args: [],
-    options: ["scope?: \"scope\" | \"all\" = \"scope\"", "table?: boolean = false (uses console.table)"],
-    returns: "{ nodes: object[], links: object[] }",
-  },
-  composability: {
-    signature: "composability(options = {})",
-    summary: "Measure how chainable and expressive the graph namespace is.",
-    args: [],
-    options: ["detailed?: boolean = false (include method spec + transitions)", "print?: boolean = false (console.log report)"],
-    returns: "{ composability_percent, reachable_pairs, categories, ... }",
-  },
-};
-
-[
-  "patch",
-  "clear",
-  "replace_nodes",
-  "replace_links",
-  "add_nodes",
-  "update_nodes",
-  "remove_nodes",
-  "add_links",
-  "update_links",
-  "remove_links",
-  "snapshot",
-  "restore",
-  "node_color",
-  "node_radius",
-  "edge_width",
-  "edge_color",
-].forEach((key) => {
-  delete graph_namespace_docs[key];
-});
-
-Object.assign(graph_namespace_docs, {
   nodes: {
     signature: "nodes(ids?)",
     summary: "Start a node selection from all nodes or selected ids.",
@@ -444,7 +191,7 @@ Object.assign(graph_namespace_docs, {
   },
   where: {
     signature: "where(predicate)",
-    summary: "Filter current node/edge selection by predicate.",
+    summary: "Filter current selection by predicate.",
     args: ["predicate: (item)=>boolean"],
     returns: "selection",
   },
@@ -455,15 +202,63 @@ Object.assign(graph_namespace_docs, {
     options: ["direction?: both | out | in = both", "include_seeds?: boolean = true"],
     returns: "NodeSelection",
   },
+  neighbors: {
+    signature: "neighbors(seed_ids_or_k, k?, options = {})",
+    summary: "Root: `neighbors(seed_ids, k)`; selection: `neighbors(k)`.",
+    args: ["seed_ids_or_k: id[] on GraphView, hop count on NodeSelection", "k?: hop count for GraphView"],
+    options: ["direction?: both | out | in = both", "include_seeds?: boolean = true", "shell?: boolean = false (exact-k ring)"],
+    returns: "NodeSelection",
+  },
+  boundary: {
+    signature: "boundary(options = {})",
+    summary: "Select frontier edges with exactly one endpoint in current node selection.",
+    args: [],
+    options: ["direction?: both | out | in = both"],
+    returns: "EdgeSelection",
+  },
+  cut: {
+    signature: "cut(other?, options = {})",
+    summary: "Select crossing edges between current node selection and `other`; with no arg, behaves like boundary().",
+    args: ["other?: NodeSelection | EdgeSelection"],
+    options: ["direction?: both | out | in = both", "relation?: incident | induced = incident"],
+    returns: "EdgeSelection",
+  },
+  any_path_to: {
+    signature: "any_path_to(target_id, options = {})",
+    summary: "Find any path from selected seeds to target.",
+    args: ["target_id: node id"],
+    options: ["mode?: first | union | intersect | error | list = first"],
+    returns: "NodeSelection | NodeSelection[]",
+  },
+  shortest_path_to: {
+    signature: "shortest_path_to(target_id, options = {})",
+    summary: "Find shortest path(s) from selected seeds to target.",
+    args: ["target_id: node id"],
+    options: ["mode?: first | union | intersect | error | list = first", "weighted?: boolean = false", "weight_key?: string = \"weight\""],
+    returns: "NodeSelection | NodeSelection[]",
+  },
+  components: {
+    signature: "components(options = {})",
+    summary: "Resolve connected components for selected seeds.",
+    args: [],
+    options: ["mode?: union | intersect | first | error | list = union"],
+    returns: "NodeSelection | NodeSelection[]",
+  },
+  subgraph: {
+    signature: "subgraph(criteria = {})",
+    summary: "Select by `{ node_ids }`, `{ groups }`, or `{ predicate }`.",
+    args: ["criteria.node_ids?: id[]", "criteria.groups?: group[]", "criteria.predicate?: (node)=>boolean"],
+    returns: "NodeSelection",
+  },
   style: {
     signature: "style(patch_or_fn)",
-    summary: "Merge style fields into current selection.",
-    args: ["patch_or_fn: object or (item)=>object"],
-    returns: "selection",
+    summary: "Merge style fields into selected nodes.",
+    args: ["patch_or_fn: object or (node)=>object"],
+    returns: "NodeSelection",
   },
   attr: {
     signature: "attr(patch_or_fn)",
-    summary: "Merge attributes into current selection.",
+    summary: "Merge attributes into selected nodes or edges.",
     args: ["patch_or_fn: object or (item)=>object"],
     returns: "selection",
   },
@@ -474,73 +269,85 @@ Object.assign(graph_namespace_docs, {
     options: ["center?: boolean = false", "clone?: boolean = true", "drag?: boolean = false"],
     returns: "GraphView",
   },
-  set: {
-    signature: "set(name, selection) | set({ nodes, links })",
-    summary: "Store named selection or replace graph data.",
-    args: ["name: set key", "selection: NodeSelection | EdgeSelection"],
-    options: [...shared_graph_update_options],
-    returns: "GraphView",
-  },
-  use: {
-    signature: "use(name)",
-    summary: "Load a named selection set.",
-    args: ["name: set key"],
-    returns: "NodeSelection | EdgeSelection",
-  },
-  clear_sets: {
-    signature: "clear_sets()",
-    summary: "Clear all named selection sets.",
-    args: [],
-    returns: "GraphView",
-  },
   replace: {
     signature: "replace(data = {}, options = {})",
     summary: "Replace full graph with canonicalized nodes and links.",
     args: ["data.nodes: node[]", "data.links: link[]"],
-    options: [...shared_graph_update_options],
+    options: ["center?: boolean = false", "clone?: boolean = true", "drag?: boolean = false"],
     returns: "GraphView",
   },
   merge: {
     signature: "merge(data = {}, options = {})",
     summary: "Merge nodes and links into existing graph with dedupe.",
     args: ["data.nodes?: node[]", "data.links?: link[]"],
-    options: [...shared_graph_update_options],
+    options: ["center?: boolean = false", "clone?: boolean = true", "drag?: boolean = false"],
     returns: "GraphView",
   },
-  neighbors: {
-    signature: "neighbors(seed_ids, k = 1, options = {})",
-    summary: "Select nodes within k hops of seed ids.",
-    args: ["seed_ids: id or id[]", "k: hop distance"],
-    options: ["direction?: both | out | in = both", "include_seeds?: boolean = true"],
-    returns: "NodeSelection",
-  },
-  path_between: {
-    signature: "path_between(source_id, target_id, options = {})",
-    summary: "Select nodes on a path between two nodes.",
-    args: ["source_id: node id", "target_id: node id"],
-    options: ["weighted?: boolean = false", "weight_key?: string = \"weight\""],
-    returns: "NodeSelection",
-  },
-  connected_component: {
-    signature: "connected_component(seed_id)",
-    summary: "Select all nodes in the same connected component.",
-    args: ["seed_id: node id"],
-    returns: "NodeSelection",
-  },
-  subgraph: {
-    signature: "subgraph(criteria = {})",
-    summary: "Select by `{ node_ids }`, `{ groups }`, or `{ predicate }`.",
-    args: ["criteria.node_ids?: id[]", "criteria.groups?: group[]", "criteria.predicate?: (node)=>boolean"],
-    returns: "NodeSelection",
-  },
-  composability: {
-    signature: "composability(options = {})",
-    summary: "Measure how chainable and expressive the graph namespace is.",
+  clear: {
+    signature: "clear(options = {})",
+    summary: "Remove all nodes and links.",
     args: [],
-    options: ["detailed?: boolean = false (include method spec)", "print?: boolean = false"],
-    returns: "{ composability_percent, reachable_pairs, categories, ... }",
+    options: ["center?: boolean = false", "clone?: boolean = true", "drag?: boolean = false"],
+    returns: "GraphView",
   },
-});
+  normalize: {
+    signature: "normalize(options = {})",
+    summary: "Deduplicate nodes/links and remove invalid endpoints.",
+    args: [],
+    options: ["center?: boolean = false", "clone?: boolean = true", "drag?: boolean = false"],
+    returns: "GraphView",
+  },
+  validate: {
+    signature: "validate()",
+    summary: "Validate ids and link endpoint integrity.",
+    args: [],
+    returns: "{ ok: boolean, errors: string[] }",
+  },
+  reindex: {
+    signature: "reindex(options = {})",
+    summary: "Renumber node ids and rewrite link endpoints.",
+    args: [],
+    options: ["offset?: number = 0", "center?: boolean = false", "clone?: boolean = true", "drag?: boolean = false"],
+    returns: "GraphView",
+  },
+  ids: {
+    signature: "ids()",
+    summary: "Return selection ids.",
+    args: [],
+    returns: "(number|string)[]",
+  },
+  count: {
+    signature: "count()",
+    summary: "Return node/link counts for graph or selection.",
+    args: [],
+    returns: "{ nodes: number, links: number }",
+  },
+  to_array: {
+    signature: "to_array()",
+    summary: "Return selected entities as an array (nodes or edges).",
+    args: [],
+    returns: "object[]",
+  },
+  to_object: {
+    signature: "to_object()",
+    summary: "Return selected graph payload as `{ nodes, links }`.",
+    args: [],
+    returns: "{ nodes: object[], links: object[] }",
+  },
+  value: {
+    signature: "value()",
+    summary: "Return deep-cloned graph or selection payload.",
+    args: [],
+    returns: "{ nodes: object[], links: object[] }",
+  },
+  print: {
+    signature: "print(options = {})",
+    summary: "Log and return graph or selection payload.",
+    args: [],
+    options: ["table?: boolean = false"],
+    returns: "{ nodes: object[], links: object[] }",
+  },
+};
 
 const safe_stringify = (value) => {
   try {
@@ -583,7 +390,7 @@ const escape_html = (text) =>
     .replaceAll(">", "&gt;");
 
 const highlight_js = (code) => {
-  const token_regex = /(\/\/.*$)|(\"(?:\\.|[^\"\\])*\"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`)|(\b\d+(?:\.\d+)?\b)|(\b(?:pp|pn|true|false|null|undefined|return|const|let|new|typeof|instanceof|graph|set|patch|clear|replace_nodes|replace_links|add_nodes|update_nodes|remove_nodes|add_links|update_links|remove_links|merge|snapshot|restore|validate|normalize|select_all|select_nodes_by_ids|select_nodes_by_attr|select_nodes_where|select_links_by_attr|select_links_where|select_neighbors|select_path_between|select_connected_component|select_subgraph|reindex|node_color|node_radius|edge_width|edge_color|ids|count|value|print|composability|scope|table|detailed|combine|union|intersect|subtract|replace|direction|weighted|weight_key|include_seeds)\b)|([{}()[\].,;])/gm;
+  const token_regex = /(\/\/.*$)|(\"(?:\\.|[^\"\\])*\"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`)|(\b\d+(?:\.\d+)?\b)|(\b(?:pp|pn|true|false|null|undefined|return|const|let|new|typeof|instanceof|graph|nodes|edges|where|k_hop|neighbors|boundary|cut|any_path_to|shortest_path_to|components|subgraph|style|attr|remove|replace|merge|clear|validate|normalize|reindex|ids|count|to_array|to_object|value|print|graph_namespace_composability|table|direction|weighted|weight_key|include_seeds|shell|offset|mode|relation|incident|induced|list|error|first)\b)|([{}()[\].,;])/gm;
   let output = "";
   let cursor = 0;
   let match = token_regex.exec(code);
@@ -764,7 +571,10 @@ const setup_graph_api_lab = () => {
   }
 
   set_graph_api_status("Ready.");
-  update_graph_api_result({ hint: "Edit the command and click Execute command." });
+  update_graph_api_result({
+    hint: "Edit the command and click Execute command.",
+    useful_chains: graph_namespace_chains,
+  });
 };
 
 const set_badge_state = (el, label, isOn) => {

@@ -11,7 +11,7 @@ import * as d3_force from 'd3-force';
 import { assign, forOwn, map, remove, concat, filter, unionBy, pullAllBy, pullAllWith, intersectionWith, unionWith, differenceBy, differenceWith, transform, includes, isFunction, isEmpty, merge, flatMap, sum, fromPairs, sortedIndexBy } from 'lodash-es';
 
 import { combinations, range, identity, compose, clean, read_text_file } from './core/utils.js';
-import { make_scale, scale_nodes, resolve_links, remove_nodes, insert_nodes, create_graph_namespace } from './core/graph.js';
+import { make_scale, scale_nodes, resolve_links, remove_nodes, insert_nodes, create_graph_namespace, graph_namespace_composability } from './core/graph.js';
 import { NODE_STYLE, LINE_STYLE, POLYGON_STYLE, default_node_styles, current_ns, default_ns, build_nodes, build_links, generate_links_graphics, generate_polygon_graphics, generate_node_graphics, generate_links_graphic, build_polygon, build_polygons } from './core/styles.js';
 import { apply_sim, serialize_force, FORCE_PARAMS, force_sim } from './core/simulation.js';
 import { register_ticker, clear_stage, add_items, enable_interactive, disable_interactive, make_group } from './core/viewport.js';
@@ -35,6 +35,7 @@ export {
 	remove_nodes,
 	insert_nodes,
 	create_graph_namespace,
+	graph_namespace_composability,
 	NODE_STYLE,
 	LINE_STYLE,
 	POLYGON_STYLE,

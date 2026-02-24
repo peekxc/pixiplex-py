@@ -32,10 +32,23 @@ def test_pixinet_initialization_populates_traitlets():
 
     assert widget.width == 400
     assert widget.height == 300
-    assert widget.node_ids == [0, 1, 2, 3, 4, 5]
-    assert widget.src_ids == [0, 0, 2, 1, 3, 1, 4]
-    assert widget.tgt_ids == [1, 2, 3, 3, 5, 4, 5]
-    assert widget.node_radii == [5.0] * 6
+    assert widget.nodes == [
+        {"id": 0},
+        {"id": 1},
+        {"id": 2},
+        {"id": 3},
+        {"id": 4},
+        {"id": 5},
+    ]
+    assert widget.links == [
+        {"source": 0, "target": 1},
+        {"source": 0, "target": 2},
+        {"source": 2, "target": 3},
+        {"source": 1, "target": 3},
+        {"source": 3, "target": 5},
+        {"source": 1, "target": 4},
+        {"source": 4, "target": 5},
+    ]
 
 
 def test_force_config_serializes_with_expected_keys():
@@ -80,5 +93,5 @@ def test_embed_raw_writes_minimal_html(tmp_path):
     content = out_path.read_text()
 
     assert "pixiplex_container" in content
-    assert "new pn.Pixiplex" in content
-    assert "graph.nodes" in content
+    assert "new Pixiplex" in content
+    assert "const graph =" in content

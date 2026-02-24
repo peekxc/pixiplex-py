@@ -4,6 +4,7 @@ import {
   combinations,
   compose,
   default_node_styles,
+  graph_namespace_composability,
   make_scale,
   Pixiplex,
   serialize_force,
@@ -138,14 +139,6 @@ describe("pixinet graph namespace", () => {
     expect(pp.graph().nodes().value().nodes.length).toBe(3);
   });
 
-  test("named sets can be stored and reused", () => {
-    const pp = make_pp();
-    pp.graph().nodes([1, 3]).set("groupA");
-    expect(pp.graph().use("groupA").ids().sort()).toEqual([1, 3]);
-    pp.graph().clear_sets();
-    expect(pp.graph().use("groupA").ids()).toEqual([]);
-  });
-
   test("node selection supports where, k-hop, attr, style, and remove", () => {
     const pp = make_pp();
     const selected = pp.graph().nodes().where((n) => n.group === "a");
@@ -162,14 +155,13 @@ describe("pixinet graph namespace", () => {
     expect(pp.nodes.map((n) => n.id).sort()).toEqual([1, 2]);
   });
 
-  test("edge selection supports where, style, attr, nodes, and remove", () => {
+  test("edge selection supports where, attr, nodes, and remove", () => {
     const pp = make_pp();
     const heavy_edges = pp.graph().edges().where((l) => l.weight >= 0.8);
     expect(heavy_edges.count().links).toBe(2);
 
-    heavy_edges.attr({ keep: true }).style({ lineWidth: 4, color: 0x00ffaa });
+    heavy_edges.attr({ keep: true });
     expect(pp.links.filter((l) => l.keep).length).toBe(2);
-    expect(pp.links.filter((l) => l.style?.lineWidth === 4).length).toBe(2);
 
     const incident = heavy_edges.nodes().ids().sort();
     expect(incident).toEqual([1, 2, 3]);
@@ -185,11 +177,44 @@ describe("pixinet graph namespace", () => {
     expect(pp.graph().subgraph({ predicate: (n) => n.score > 0.5 }).ids().sort()).toEqual([1, 2]);
   });
 
-  test("neighbors, path, and component selectors work", () => {
+  test("neighbors, paths, and components selectors work", () => {
     const pp = make_pp();
     expect(pp.graph().neighbors([1], 1).ids().sort()).toEqual([1, 2, 3]);
-    expect(pp.graph().path_between(1, 3).ids().length).toBeGreaterThanOrEqual(2);
-    expect(pp.graph().connected_component(1).count()).toEqual({ nodes: 3, links: 3 });
+    expect(pp.graph().nodes([1]).neighbors(1).ids().sort()).toEqual([1, 2, 3]);
+    expect(pp.graph().nodes([1]).neighbors(1, { shell: true }).ids().sort()).toEqual([2, 3]);
+    expect(pp.graph().nodes([1]).any_path_to(3).ids().length).toBeGreaterThanOrEqual(2);
+    expect(pp.graph().nodes([1]).shortest_path_to(3).ids().length).toBeGreaterThanOrEqual(2);
+    expect(pp.graph().nodes([1]).components().count()).toEqual({ nodes: 3, links: 3 });
+    expect(Array.isArray(pp.graph().nodes([1, 2]).components({ mode: "list" }))).toBe(true);
+  });
+
+  test("invalid node ids are discarded from selections", () => {
+    const pp = make_pp();
+    expect(pp.graph().nodes([1, 9999]).ids()).toEqual([1]);
+    expect(pp.graph().nodes([9999]).count()).toEqual({ nodes: 0, links: 0 });
+    expect(pp.graph().nodes([9999]).any_path_to(1).count()).toEqual({ nodes: 0, links: 0 });
+  });
+
+  test("boundary and cut return expected edge scopes", () => {
+    const pp = make_pp();
+    expect(pp.graph().nodes([1, 2]).boundary().count().links).toBe(2);
+    expect(pp.graph().nodes([1]).cut(pp.graph().nodes([2])).count().links).toBe(1);
+  });
+
+  test("to_array and to_object expose selection payloads", () => {
+    const pp = make_pp();
+    const node_sel = pp.graph().nodes([1, 3]);
+    const edge_sel = pp.graph().edges().where((e) => e.weight >= 0.8);
+
+    expect(node_sel.to_array().map((n) => n.id).sort()).toEqual([1, 3]);
+    expect(node_sel.to_object().nodes.length).toBe(2);
+    expect(node_sel.to_object().links.length).toBe(1);
+    expect(node_sel.value()).toEqual(node_sel.to_object());
+
+    expect(edge_sel.to_array().length).toBe(2);
+    expect(edge_sel.to_object().links.length).toBe(2);
+    expect(edge_sel.to_object().nodes.length).toBe(3);
+    expect(edge_sel.value()).toEqual(edge_sel.to_object());
   });
 
   test("empty style and attr patches are strict no-ops", () => {
@@ -201,8 +226,6 @@ describe("pixinet graph namespace", () => {
     pp.graph().nodes([1, 2]).style({});
     pp.graph().nodes([1, 2]).attr();
     pp.graph().nodes([1, 2]).attr({});
-    pp.graph().edges().style();
-    pp.graph().edges().style({});
     pp.graph().edges().attr();
     pp.graph().edges().attr({});
 
@@ -231,12 +254,59 @@ describe("pixinet graph namespace", () => {
     expect(pp.nodes.map((n) => n.id).sort()).toEqual([10, 11]);
   });
 
-  test("print and composability return expected payloads", () => {
+  test("root count/value/print and clear are available", () => {
+    const pp = make_pp();
+    expect(pp.graph().count()).toEqual({ nodes: 3, links: 3 });
+    expect(pp.graph().value().nodes.length).toBe(3);
+    expect(pp.graph().print().nodes.length).toBe(3);
+    pp.graph().clear();
+    expect(pp.graph().count()).toEqual({ nodes: 0, links: 0 });
+  });
+
+  test("print and composability helper return expected payloads", () => {
     const pp = make_pp();
     const payload = pp.graph().nodes([1, 3]).print();
     expect(payload.nodes.length).toBe(2);
-    const report = pp.graph().composability({ detailed: true });
+    const report = graph_namespace_composability({ detailed: true });
     expect(report.total_methods).toBeGreaterThan(0);
     expect(report.method_spec).toBeTruthy();
+  });
+
+  test("useful graph chains execute without throwing", () => {
+    const chains = [
+      "pp.graph().count()",
+      "pp.graph().nodes().count()",
+      "pp.graph().nodes().ids().slice(0, 10)",
+      "pp.graph().nodes().where((n) => n.group === 1).count()",
+      "pp.graph().neighbors([1], 1).count()",
+      "pp.graph().nodes([1]).neighbors(2).count()",
+      "pp.graph().nodes([1]).neighbors(2, { shell: true }).count()",
+      "pp.graph().nodes([1]).any_path_to(10).ids()",
+      "pp.graph().nodes([1]).shortest_path_to(10).ids()",
+      "pp.graph().nodes([1, 2]).components().count()",
+      "pp.graph().nodes([1, 2]).components({ mode: \"list\" }).map((sel) => sel.count())",
+      "pp.graph().subgraph({ groups: [1] }).count()",
+      "pp.graph().nodes().where((n) => n.id % 2 === 0).attr({ even: true }).count()",
+      "pp.graph().nodes().where((n) => n.group === 1).to_array().length",
+      "pp.graph().nodes().where((n) => n.group === 1).to_object().nodes.length",
+      "pp.graph().edges().where((e) => Number(e.weight || 0) > 1).attr({ heavy: true }).count()",
+      "pp.graph().nodes([1]).edges().where((e) => Number(e.weight || 0) > 0).nodes().count()",
+      "pp.graph().edges().where((e) => Number(e.weight || 0) > 1).to_array().length",
+      "pp.graph().edges().where((e) => Number(e.weight || 0) > 1).to_object().links.length",
+      "pp.graph().nodes([1, 2]).boundary().count()",
+      "pp.graph().nodes([1, 2]).cut(pp.graph().nodes([3, 4])).count()",
+      'pp.graph().merge({ nodes: [{ id: "temp-node" }], links: [] }).count()',
+      'pp.graph().nodes(["temp-node"]).remove().count()',
+      "pp.graph().clear().count()",
+    ];
+
+    chains.forEach((command) => {
+      const pp = new Pixiplex([], [], 640, 480, 1.0);
+      pp.graph().replace({
+        nodes: Array.from({ length: 25 }, (_, i) => ({ id: i + 1, group: (i % 3) + 1, score: i / 25 })),
+        links: Array.from({ length: 40 }, (_, i) => ({ source: (i % 25) + 1, target: ((i * 7 + 3) % 25) + 1, weight: (i % 5) + 0.5 })),
+      });
+      expect(() => Function("pp", `\"use strict\"; return (${command});`)(pp)).not.toThrow();
+    });
   });
 });

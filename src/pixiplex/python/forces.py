@@ -1,9 +1,9 @@
 """Force configuration models and fluent builders for Pixinet."""
 
+from __future__ import annotations
+
 from dataclasses import asdict, dataclass
 from typing import Any, Optional, Union
-
-import anywidget
 
 
 @dataclass
@@ -111,8 +111,12 @@ class ForceConfig:
 
     def many_body(self, name: str = "charge", **kwargs) -> "ForceConfig":
         """Adds a many-body force, such as gravity or electrostatic repulsion."""
-        if "distance_max" in kwargs and kwargs["distance_max"] == float("inf"):
-            kwargs["distance_max"] = None
+        if "distance_min" in kwargs:
+            kwargs["distanceMin"] = kwargs.pop("distance_min")
+        if "distance_max" in kwargs:
+            kwargs["distanceMax"] = kwargs.pop("distance_max")
+        if kwargs.get("distanceMax") == float("inf"):
+            kwargs["distanceMax"] = None
         self.forces[name] = {
             "type": "forceManyBody",
             "enabled": True,
@@ -126,6 +130,7 @@ class ForceConfig:
         """Add radial positioning force."""
         self.forces[name] = {
             "type": "forceRadial",
+            "enabled": True,
             "params": asdict(ForceRadial(radius=radius, **kwargs)),
         }
         return self
@@ -149,7 +154,7 @@ class ForceConfig:
         return self
 
     @staticmethod
-    def as_dict(config: "ForceConfig", widget: anywidget.AnyWidget) -> dict[str, Any]:
+    def as_dict(config: "ForceConfig", widget: Any) -> dict[str, Any]:
         """Dictionary serialization method necessary for widget synchronization."""
         return config.forces.copy()
 

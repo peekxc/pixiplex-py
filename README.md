@@ -1,54 +1,67 @@
-# pixiplex_py
+# pixiplex
 
-*Under construction*
+## Install
 
+```bash
+python3 -m pip install -e .
+```
 
-# Performance 
+Optional dev extras:
 
-per-node (laptop): 25-30 fps
-group (laptop): 25-30 fps 
-mesh (laptop): 25-30 fps
-WebGL (laptop): 25-30 fps
+```bash
+python3 -m pip install -e ".[dev]"
+```
 
-It seems to be CPU bound 
+Install JS tooling:
 
+```bash
+bun install
+```
 
-# Graph API chain examples
+## Build assets
 
-```js
-pp.graph().count()
-pp.graph().nodes().count()
-pp.graph().nodes().ids().slice(0, 10)
-pp.graph().nodes([1, 2, 3]).count()
-pp.graph().nodes([1, 9999]).ids()
-pp.graph().neighbors([1], 2).count()
-pp.graph().neighbors([1], 2, { direction: "out" }).count()
-pp.graph().subgraph({ groups: [1] }).count()
-pp.graph().nodes([1]).neighbors(2).count()
-pp.graph().nodes([1]).neighbors(2, { shell: true }).count()
-pp.graph().nodes([1, 2]).components().count()
-pp.graph().nodes([1, 2]).components({ mode: "list" }).map((sel) => sel.count())
-pp.graph().nodes([1]).any_path_to(10).ids()
-pp.graph().nodes([1]).shortest_path_to(10).ids()
-pp.graph().nodes([1]).shortest_path_to(10, { weighted: true, weight_key: "weight" }).ids()
-pp.graph().nodes().where((n) => Number(n.score || 0) > 0.8).count()
-pp.graph().nodes().where((n) => n.group === 1).attr({ flagged: true }).count()
-pp.graph().nodes().where((n) => n.group === 1).style({ color: 0xff5500, radius: 8 }).count()
-pp.graph().nodes([1]).edges().count()
-pp.graph().nodes([1, 2, 3]).edges({ relation: "induced" }).count()
-pp.graph().nodes([1, 2]).boundary().count()
-pp.graph().nodes([1, 2]).cut(pp.graph().nodes([3, 4])).count()
-pp.graph().nodes().where((n) => n.group === 1).to_array().length
-pp.graph().nodes().where((n) => n.group === 1).to_object().nodes.length
-pp.graph().edges().where((e) => Number(e.weight || 0) > 1).count()
-pp.graph().edges().where((e) => Number(e.weight || 0) > 1).nodes().count()
-pp.graph().edges().where((e) => Number(e.weight || 0) > 1).attr({ heavy: true }).count()
-pp.graph().edges().where((e) => Number(e.weight || 0) > 1).to_array().length
-pp.graph().edges().where((e) => Number(e.weight || 0) > 1).to_object().links.length
-pp.graph().nodes([1, 2]).cut().nodes().to_array().map((n) => n.id)
-pp.graph().merge({ nodes: [{ id: "temp-node" }], links: [] }).count()
-pp.graph().nodes(["temp-node"]).remove().count()
-pp.graph().normalize().validate()
-pp.graph().reindex({ offset: 100 }).count()
-pp.graph().clear().count()
+```bash
+bun run build
+```
+
+This regenerates:
+
+- `src/pixiplex/static/widget.js`
+- `src/pixiplex/static/pixinet.js`
+- demo bundle in `demo/dist`
+
+## Run demo
+
+```bash
+bun run dev
+```
+
+Open `http://127.0.0.1:5173`.
+
+## Jupyter widget development
+
+Terminal 1:
+
+```bash
+bun run build:widget -- --watch
+```
+
+Terminal 2:
+
+```bash
+bun run build:pixinet -- --watch
+```
+
+Terminal 3:
+
+```bash
+jupyter lab
+```
+
+In notebook:
+
+```python
+%load_ext autoreload
+%autoreload 2
+%env ANYWIDGET_HMR=1
 ```

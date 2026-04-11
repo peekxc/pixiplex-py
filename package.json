@@ -1,7 +1,7 @@
 {
 	"scripts": {
 		"dev": "vite demo --config demo/vite.config.js",
-		"build": "bun run build:widget && bun run build:pixinet && bun run build:demo && bun run build:css",
+		"build": "bun run build:widget && bun run build:pixinet && bun run build:demo",
 		"docs:api": "node scripts/generate-js-api-docs.mjs",
 		"docs:api:node": "node scripts/generate-js-api-docs.mjs",
 		"docs:build": "node scripts/generate-js-api-docs.mjs && mkdocs build --clean",
@@ -10,10 +10,11 @@
 		"build:demo": "vite build demo --config demo/vite.config.js",
 		"preview": "vite preview demo --config demo/vite.config.js",
 		"test": "vitest run",
-		"bench": "vitest bench --run"
+		"bench": "vitest bench --run",
+		"test:js": "vitest run",
+		"bench:js": "vitest bench --run"
 	},
 	"dependencies": {
-		"": ".",
 		"@pixi/events": "^7.4.2",
 		"brotli-cli": "^2.1.0",
 		"d3": "^7.9.0",
@@ -27,7 +28,7 @@
 		"lodash-es": "^4.17.21",
 		"pixi-viewport": "^6.0.3",
 		"pixi.js": "^8.6.6",
-		"pnpm": "^10.30.0",
+		"pnpm": "^10.33.0",
 		"pyodide": "^0.27.2"
 	},
 	"devDependencies": {

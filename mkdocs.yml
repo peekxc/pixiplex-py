@@ -8,9 +8,9 @@ repo_url: https://github.com/peekxc/pixiplex-py
 
 nav: 
   - index.md
-  - overview.md
-  - workflows.md
-  - renderers.md
+  - Overview: overview.md
+  - Workflow: workflows.md
+  - Renderers: renderers.md
   - Reference: 
     - PY API: $api/pixiplex.pixinet 
     - JS API:

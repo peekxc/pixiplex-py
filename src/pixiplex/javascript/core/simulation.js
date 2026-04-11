@@ -2,9 +2,7 @@ import { forOwn, fromPairs, reduce } from "lodash-es";
 import * as d3_force from "d3-force";
 import { forceSimulation } from "d3-force";
 
-/**
- * Mapping from d3-force type names to serializable parameter getters.
- */
+/** Mapping from d3-force type names to serializable parameter getters. */
 export const FORCE_PARAMS = {
   forceManyBody: ["strength", "theta", "distanceMin", "distanceMax"],
   forceLink: ["distance", "strength", "iterations"],
